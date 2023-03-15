@@ -6,7 +6,7 @@
 	import type { Window as KeplrWindow } from '@keplr-wallet/types';
 	import type { OfflineSigner } from '@cosmjs/proto-signing';
 
-	import {juno, cosmwasm, getSigningCosmosClient, getSigningJunoClient} from 'juno-network'		
+	import {juno, cosmwasm, osmosis, router, getSigningJunoClient, getSigningOsmosisClient} from 'juno-network'		
 
 	// Signing (Keplr & Ledger)
 	import type { OfflineAminoSigner } from '@cosmjs/amino';
@@ -36,8 +36,7 @@
 	let contract_addr = "" //juno1d7yjapmwerm6qxaxtuyefmcns45x9x6d78gys9uhfsdpkfs4dxfssgw7ap
 	let method = "register" // and update
 	let controlling_contract_account = ""
-	let contract_label = ""
-	let user_addr = ""
+	let contract_label = ""	
 
 	let new_address = ""
 
@@ -58,6 +57,21 @@
 
 		return signer(chain_id);
 	};
+
+	const query_tokenfactory_tokens = async () => {
+		let address = "juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0"
+		let osmo_query = (await osmosis.ClientFactory.createRPCQueryClient({rpcEndpoint}));
+
+		let res = await osmo_query.osmosis.tokenfactory.v1beta1.denomsFromCreator({creator: address}).then(res => {
+			return res
+		}).catch(e => {
+			return undefined
+		})
+
+		console.log(res)
+
+		return res
+	}
 
 	const query_contract_info = async (): Promise<boolean> =>  {
 		// returns false if the user can NOT update / register the contract			
@@ -134,6 +148,7 @@
 		}
 
 		let msg;
+		let signing_client = getSigningJunoClient({rpcEndpoint, signer});
 		if(method == "register") {
 			const { registerFeeShare } = juno.feeshare.v1.MessageComposer.withTypeUrl;
 			msg = registerFeeShare({
@@ -149,9 +164,16 @@
 				withdrawerAddress: new_address
 			})
 		}
-			
-		let signing_client = getSigningJunoClient({rpcEndpoint, signer});			
 
+		if(method=="tokenfactory") {
+			const { createDenom } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
+			msg = createDenom({
+				sender: address,
+				subdenom: "js-denom",
+			});
+			signing_client = getSigningOsmosisClient({rpcEndpoint, signer});
+		}
+							
 		(await signing_client).signAndBroadcast(address, [msg], fee, "memo").then((res) => {
 			console.log(res)	
 			
@@ -211,6 +233,7 @@
 				<select id="contract_label" name="contract_label" bind:value={method}>
 					<option value="register" selected>Register</option>
 					<option value="update">Update</option>
+					<option value="tokenfactory">tokenfactory</option>
 				</select>
 			</div>
 		</div>
@@ -262,7 +285,13 @@
 				<div class="row">
 					<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />		
 				</div>
-		</div>				
+		</div>	
+		
+		<!-- crete a button which on click calls query_tokenfactory_tokens async -->
+		<div class="row">
+			<input type="submit" value="Query tokenfactory tokens" on:click={() => query_tokenfactory_tokens()} />
+		</div>
+
 	</div>
 </center>
 
