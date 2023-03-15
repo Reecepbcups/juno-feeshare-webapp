@@ -28,12 +28,6 @@
 	const CHAIN_ID = "juno-1"
 	const rpcEndpoint = "https://rpc.juno.strange.love/"			
 
-	// User Facing Information
-	// let from_client: SigningStargateClient | SigningCosmWasmClient | undefined;
-	
-	// let query_client: QueryClient & WasmExtension | undefined; // QueryClient with Extensions	
-	// let tendermint34_client: Tendermint34Client | undefined;
-
 	const contract_addr_len = 63
 	const juno_addr_len = 43
 
@@ -172,7 +166,17 @@
 				// </span>		
 			} else {
 				// toast.push(`Error: ${res.rawLog}\n\n${html_url}`, error);
-				error_notification(`Error: ${res.rawLog}\n\n${html_url}`)
+
+				// split the res.rawLog on the last : and get the last part
+
+				if(!res.rawLog) {
+					error_notification(`Error: ${html_url}\n\n${html_url}`)
+					return
+				}
+
+				let final_log = res.rawLog.split(":").pop()
+
+				error_notification(`Error: ${final_log}\n\n${html_url}`)
 			}
 			
 			
@@ -190,9 +194,13 @@
 
 
 
-<center>
-	<!-- button to call query_contract_info -->
+<center>	
 	<h1>Juno FeeShare</h1>
+
+	<!-- if label is set, then show it as a h2 -->
+	{#if contract_label.length > 0}
+		<h2>Contract: {contract_label}</h2>
+	{/if}
 	
 	<div id="feeshare" class="div_center">
 		<div class="row">
@@ -217,12 +225,24 @@
 						#contract_addr {
 							background-color: #ffcccc;
 						}
-					</style>
+					</style>										
+				{:else}
+				<!-- We get the contract label and make it visible on the page -->
+					{#await query_contract_info()}
+						<!-- <p>awaiting...</p> -->
+					{:then res}
+						<!-- <p>resolved: {res}</p> -->
+					{:catch error}
+						<!-- <p>rejected: {error.message}</p> -->
+					{/await}
 				{/if}
+				
+
+
 				<input id="contract_addr" name="contract_addr" type="text" placeholder="Enter contract address" bind:value={contract_addr} />
 			</div>
 
-			<!-- if method is update, show another div which allows texrt input for a normal address -->
+			<!-- if method is update, show another div which allows text input for a normal address -->
 			{#if method == "update"}
 				<div class="col-25">
 					<label for="new_address">New Withdraw Address</label>
@@ -239,16 +259,15 @@
 				</div>
 			{/if}
 
-		</div>		
-
-		<div class="row">
-			<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />		
-		</div>
+				<div class="row">
+					<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />		
+				</div>
+		</div>				
 	</div>
 </center>
 
 
-<style>
+<style>		
 	/* make all font 1.2em */
 	* {
 		font-size: 1em;
