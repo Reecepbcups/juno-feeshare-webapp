@@ -4,45 +4,40 @@
 -->
 <script lang="ts">
 	import type { Window as KeplrWindow } from '@keplr-wallet/types';
-	// import Review from '../components/Review.svelte'
-	import type { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin';
-	import { SigningStargateClient, StargateClient, type StdFee } from '@cosmjs/stargate';
+	import type { OfflineSigner } from '@cosmjs/proto-signing';
+
+	import {juno, cosmwasm, getSigningCosmosClient, getSigningJunoClient} from 'juno-network'		
 
 	// Signing (Keplr & Ledger)
 	import type { OfflineAminoSigner } from '@cosmjs/amino';
 	import type { OfflineDirectSigner } from '@cosmjs/proto-signing';
 
-	import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
-	import { HttpBatchClient } from '@cosmjs/tendermint-rpc/build/rpcclients';
-	import { setupIbcExtension, QueryClient } from '@cosmjs/stargate';		
+	// import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    	
+	// const toast_style: ToastOptions = {
+	// 	position: 'top-right',
+	// 	duration: 6000,
+	// 	style: 'background: #333; color: #fff; width: 15%; font-size: 1.1rem;'
+	// };
 
-	//  setupCosmWasmExtension from cosmjs
-	import { setupWasmExtension, SigningCosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-	
-	import type { WasmExtension } from '@cosmjs/cosmwasm-stargate';	
-	import type { IbcExtension } from '@cosmjs/stargate';
+	// import success_notification from '../components/Status.svelte'
+	import {error_notification, success_notification} from '../components/Status.svelte'
+	import { SvelteToast } from '@zerodevx/svelte-toast';
 
-
-	import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    
-	import type { A } from 'vitest/dist/types-71ccd11d';
-	const toast_style: ToastOptions = {
-		position: 'top-right',
-		duration: 6000,
-		style: 'background: #333; color: #fff; width: 15%; font-size: 1.1rem;'
-	};
+	const fee = {amount: [{	amount: "100000",	denom: "ujuno",},], gas: "200000",};
 	
 	const CHAIN_ID = "juno-1"
-	const RPC = "https://rpc.juno.strange.love/"			
+	const rpcEndpoint = "https://rpc.juno.strange.love/"			
 
 	// User Facing Information
-	let from_client: SigningStargateClient | SigningCosmWasmClient | undefined;
-	let query_client: QueryClient & WasmExtension | undefined; // QueryClient with Extensions	
-	let tendermint34_client: Tendermint34Client | undefined;
+	// let from_client: SigningStargateClient | SigningCosmWasmClient | undefined;
+	
+	// let query_client: QueryClient & WasmExtension | undefined; // QueryClient with Extensions	
+	// let tendermint34_client: Tendermint34Client | undefined;
 
 	// user variables
 	const WALLET_PREFIX = "juno"
 	let contract_addr = "juno1d7yjapmwerm6qxaxtuyefmcns45x9x6d78gys9uhfsdpkfs4dxfssgw7ap"
-	let method = "update" // and register
+	let method = "register" // and register
 	let controlling_contract_account = ""
 	let contract_label = ""
 	let user_addr = ""
@@ -57,7 +52,7 @@
 		const keplr = window as KeplrWindow;
 		if (keplr === undefined) {			
 			throw new Error('Keplr not found');
-		}
+		}		
 
 		let signer = keplr.getOfflineSignerAuto;
 		if (signer === undefined) {
@@ -67,159 +62,120 @@
 		return signer(chain_id);
 	};
 
-	const query_contract_info = async () => {	
-		if (tendermint34_client === undefined) {
-			tendermint34_client = await Tendermint34Client.connect(RPC);
-		}
-		if(query_client === undefined) {			
-			// let qclient: QueryClient & IbcExtension & WasmExtension = query_client as QueryClient & IbcExtension & WasmExtension;
-			query_client = QueryClient.withExtensions(tendermint34_client, setupWasmExtension);			
-		}		
-	
-		const c_info = await query_client.wasm.getContractInfo(contract_addr);		
+	const query_contract_info = async (): Promise<boolean> =>  {
+		// returns false if the user can NOT update / register the contract			
+		let cw_query = (await cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint}));
+		
+		let c_info = await cw_query.cosmwasm.wasm.v1.contractInfo({address: contract_addr}).then(res => {
+			return res
+		}).catch(e => {
+			return undefined
+		})
+
+		// const c_info = await query_client.wasm.getContractInfo(contract_addr);		
 		console.log(contract_addr, c_info)
 
 		if(c_info) {
 			const creator = c_info.contractInfo?.creator || "";
 			const admin = c_info.contractInfo?.admin || "";
-			const label = c_info.contractInfo?.label || "";
+			contract_label = c_info.contractInfo?.label || "";
 
-			controlling_contract_account = creator
-			contract_label = label
+			if(admin.length > 0) {
+				controlling_contract_account = admin
+			} else {
+				controlling_contract_account = creator
+			}			
 
-			if(admin) {
-				if(admin.length > 0) {
-					// if it errors, its not an admin contract.
-					await query_client.wasm.getContractInfo(admin).then((res) => {
-						toast.error(`Admin is a contract. You can not change the withdraw address`, toast_style);
-					}).catch((e) => {
-						controlling_contract_account = admin
-					});					
-				}
-			}
+			// if admin length is longer than a normal account, its a contract.
+			if(admin.length > "juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0".length) {
+				// if it errors, its not an admin contract.
+				await cw_query.cosmwasm.wasm.v1.contractInfo({address: contract_addr}).then(res => {
+					// toast.error(`Admin is a contract. You can not change the withdraw address`, toast_style);
+					// toast.push(`Admin is a contract. You can not change the withdraw address`, error);
+					error_notification("Admin is a contract. You can not change the withdraw address")
+					return false;
+				}).catch(e => {
+					controlling_contract_account = admin
+					// toast.push(`Admin is a user. You can change the withdraw address`, success);
+					success_notification("Admin is a user. You can change the withdraw address")
+					// check if they the admin is their address?				
+				})
+			}						
 		}			
+		return true;
 	}	
 
-	const fee: StdFee = {
-		amount: [
-			{
-				amount: "100000",
-				denom: "ujuno",
-			},
-		],
-		gas: "200000",
-	};
-
 	const feeshare_contract = async () => {
-		let wallet = await get_wallet_for_chain(CHAIN_ID);
-		let address = (await wallet.getAccounts())[0].address;
+		let signer: OfflineSigner = await get_wallet_for_chain(CHAIN_ID);
+		let address = (await signer.getAccounts())[0].address;
 
-		await query_contract_info();
-
-		const message = {
-			"feeshare": {
-				"contract": contract_addr,
-				"address": address
-			}
+		let res = await query_contract_info();
+		if(res == false) {
+			return
 		}
 
-		from_client = await SigningStargateClient.connectWithSigner(RPC, wallet, {
-			prefix: WALLET_PREFIX
-		});
-
-		if (from_client === undefined) {
-			throw new Error('from_client not found');
-		}	
-
-		// use from_client to make a custom message
-
-		const msg = {
-			typeUrl: "/juno.feeshare.v1.MsgRegisterFeeShare",
-			value: {
-				contract_address: contract_addr,
-				deployer_address: controlling_contract_account,
-				withdrawer_address: new_address
-			}
+		console.log(controlling_contract_account, address)
+		if(controlling_contract_account != address) {
+			// toast.error(`You are not the admin of this contract.`, toast_style);
+			// toast.push(`You are not the admin of this contract.`, error);
+			let controlling_html = `<a href="https://www.mintscan.io/juno/account/${controlling_contract_account}" target="_blank">${controlling_contract_account}</a>`
+			error_notification(`You are not the admin or creator.<br>You can not modify it.<br><br>Controller: ${controlling_html}`)
+			return
 		}
 
-		// sign the custom type message msg
-		const signed = await from_client.sign(address, [msg], fee, "memo");
+		let msg;
+		if(method == "register") {
+			const { registerFeeShare } = juno.feeshare.v1.MessageComposer.withTypeUrl;
+			msg = registerFeeShare({
+				contractAddress: contract_addr,
+				deployerAddress: controlling_contract_account,
+				withdrawerAddress: new_address
+			})
+		} else {
+			const { updateFeeShare } = juno.feeshare.v1.MessageComposer.withTypeUrl;
+			msg = updateFeeShare({
+				contractAddress: contract_addr,
+				deployerAddress: controlling_contract_account,
+				withdrawerAddress: new_address
+			})
+		}
+			
+		let signing_client = getSigningJunoClient({rpcEndpoint, signer});			
 
-		const result = await from_client.broadcastTx(signed.bodyBytes);
-
-		// if (result.code === undefined) {
-		// 	toast.success(`Success`, toast_style);
-		// } else {
-		// 	toast.error(`Error: ${result.rawLog}`, toast_style);
-		// }
-
-		console.log(result);		
+		(await signing_client).signAndBroadcast(address, [msg], fee, "memo").then((res) => {
+			console.log(res)	
+			
+			let URL = `https://www.mintscan.io/juno/txs/${res.transactionHash}`
+			let html_url = `<a href=${URL}>mintscan.io/juno/txs/${res.transactionHash}</a>`
+			if(res.code == 0) {
+				// toast.push(`Success\n\n${html_url}`, success);		
+				success_notification(`Success\n\n${html_url}`)
+				// <span>
+				// 	Custom and <b>bold</b>
+				// 	<button on:click={() => toast_.dismiss(toast.id)}>Dismiss</button>
+				// </span>		
+			} else {
+				// toast.push(`Error: ${res.rawLog}\n\n${html_url}`, error);
+				error_notification(`Error: ${res.rawLog}\n\n${html_url}`)
+			}
+			
+			
+		}).catch((e) => {
+			console.log(e)
+			// toast.push(`Error: ${e}`, error);
+			error_notification(`Error: ${e}`)
+		})	
 	}
-
-	// 	await from_client.execute(
-	// 		address,
-	// 		REVIEWS_CONTRACT_ADDRESS,
-	// 		msg,
-	// 		fee		
-	// 	).then((res) => {
-	// 		console.log(res)
-	// 		toast.success(
-	// 			`Review Transaction @ height ${res.height}\n\nTxHash: ${res.transactionHash}`,
-	// 			toast_style
-	// 		);			
-	// 	}).catch((err) => {
-	// 		console.log(err)
-	// 		toast.error(`${err}`, toast_style);
-	// 	})
-
-	// 	// update their page text after submit
-	// 	test_query()
-	// }
-
-	// call test_query on page load
-	// test_query()
 
 </script>
 
-<Toaster />
+<!-- <Toaster /> -->
+<SvelteToast />
 
 <h1>Juno FeeShare</h1>
 
 
 <center>
-	<!-- <ul style="width: 20%; list-style: none;">
-		<li><a href="https://wetjoe.netlify.app/">Liquid Staking (pupjoes)</a>
-		</li>
-		<li>
-			<a href="github.com/joe-chain/joe">github.com/joe-chain/joe</a>
-		</li>
-		<li>
-			<a href="explorer.justjoe.app">explorer.justjoe.app</a>
-		</li>
-		<li>
-			<a href="https://twitter.com/JustJoeChain">@JustJoeChain</a>
-		</li>
-		<li>
-			<a href="https://justjoe.app/faq.txt">FAQ / INFO</a>
-		</li>
-		<li>
-			<a href="https://sparkibc.s3.filebase.com/JOECOIN%20PROTOCOL.pdf?response-content-disposition=inline&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=CEA302ACE80DC404571A%2F20221120%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20221120T213242Z&X-Amz-Expires=300&X-Amz-SignedHeaders=host&X-Amz-Signature=993be66885776897f9e15e07f187175a760c6bce558b960dd0217da13b412264">JoePaper</a>
-		</li>
-	</ul> -->
-
-	<!-- <br>	
-
-	<div class="div_center">	
-		<h3>Reviews</h3>	
-		<ul>
-		{#each reviews as review}
-			<li style="">
-				<Review content={review}></Review>
-			</li>
-		{/each}
-		</ul>
-	</div> -->
-
 	<!-- button to call query_contract_info -->
 	<button on:click={() => query_contract_info()}>Query Contract Info</button>
 
@@ -228,12 +184,20 @@
 		<br />
 		
 		<label for="contract_label">Contract Label</label>
-		<select id="contract_label" name="contract_label" bind:value={contract_label}>
+		<select id="contract_label" name="contract_label" bind:value={method}>
+			<option value="register" selected>Register</option>
 			<option value="update">Update</option>
-			<option value="register">Register</option>
 		</select>
 
-		<input type="submit" value="FeeShare Change" on:click={() => feeshare_contract()} />
+		<br>
+		<br>
+		<input type="submit" value="feeshare {method}" on:click={() => feeshare_contract()} />		
+
+		
+		<br>
+		<label for="contract_addr">Contract Address</label>		
+		<input id="contract_addr" name="contract_addr" type="text" placeholder="Enter contract address" bind:value={contract_addr} />
+
 	</div>
 </center>
 
