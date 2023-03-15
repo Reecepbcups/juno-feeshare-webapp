@@ -34,15 +34,18 @@
 	// let query_client: QueryClient & WasmExtension | undefined; // QueryClient with Extensions	
 	// let tendermint34_client: Tendermint34Client | undefined;
 
+	const contract_addr_len = 63
+	const juno_addr_len = 43
+
 	// user variables
 	const WALLET_PREFIX = "juno"
-	let contract_addr = "juno1d7yjapmwerm6qxaxtuyefmcns45x9x6d78gys9uhfsdpkfs4dxfssgw7ap"
-	let method = "register" // and register
+	let contract_addr = "" //juno1d7yjapmwerm6qxaxtuyefmcns45x9x6d78gys9uhfsdpkfs4dxfssgw7ap
+	let method = "register" // and update
 	let controlling_contract_account = ""
 	let contract_label = ""
 	let user_addr = ""
 
-	let new_address = "juno1reece3m8g4m3d0qrpj93rnnseudnpzhr0kewyl"
+	let new_address = ""
 
 	// Functions
 	const get_wallet_for_chain = async (
@@ -101,11 +104,24 @@
 					// check if they the admin is their address?				
 				})
 			}						
+		} else {
+			// not a valid contract
+			error_notification("Contract address is not on chain.")
+			return false;
 		}			
 		return true;
 	}	
 
 	const feeshare_contract = async () => {
+
+		// if contract_addr.length != contract_addr_len, return and show an error
+		if(contract_addr.length != contract_addr_len) {
+			// toast.error(`Contract address is not valid.`, toast_style);
+			// toast.push(`Contract address is not valid.`, error);
+			error_notification("Contract address is not valid.")
+			return
+		}
+
 		let signer: OfflineSigner = await get_wallet_for_chain(CHAIN_ID);
 		let address = (await signer.getAccounts())[0].address;
 
@@ -118,7 +134,7 @@
 		if(controlling_contract_account != address) {
 			// toast.error(`You are not the admin of this contract.`, toast_style);
 			// toast.push(`You are not the admin of this contract.`, error);
-			let controlling_html = `<a href="https://www.mintscan.io/juno/account/${controlling_contract_account}" target="_blank">${controlling_contract_account}</a>`
+			let controlling_html = `<a href="https://www.mintscan.io/juno/account/${controlling_contract_account}" target="_blank">mintscan.io/account</a>`
 			error_notification(`You are not the admin or creator.<br>You can not modify it.<br><br>Controller: ${controlling_html}`)
 			return
 		}
@@ -172,83 +188,121 @@
 <!-- <Toaster /> -->
 <SvelteToast />
 
-<h1>Juno FeeShare</h1>
 
 
 <center>
 	<!-- button to call query_contract_info -->
-	<button on:click={() => query_contract_info()}>Query Contract Info</button>
-
-	<div id="reviews" class="div_center">
-		<!-- <textarea id="contract_addr" name="contract_addr" rows="4" cols="50" placeholder="Enter contract address" bind:value={contract_addr}></textarea> -->
-		<br />
+	<h1>Juno FeeShare</h1>
+	
+	<div id="feeshare" class="div_center">
+		<div class="row">
+			<div class="col-25">
+				<label for="contract_label">Method</label>
+			</div>
+			<div class="col-75">
+				<select id="contract_label" name="contract_label" bind:value={method}>
+					<option value="register" selected>Register</option>
+					<option value="update">Update</option>
+				</select>
+			</div>
+		</div>
 		
-		<label for="contract_label">Contract Label</label>
-		<select id="contract_label" name="contract_label" bind:value={method}>
-			<option value="register" selected>Register</option>
-			<option value="update">Update</option>
-		</select>
+		<div class="row">
+			<div class="col-25">
+				<label for="contract_addr">Contract Address</label>
+			</div>
+			<div class="col-75">							
+				{#if contract_addr.length != contract_addr_len}
+					<style>
+						#contract_addr {
+							background-color: #ffcccc;
+						}
+					</style>
+				{/if}
+				<input id="contract_addr" name="contract_addr" type="text" placeholder="Enter contract address" bind:value={contract_addr} />
+			</div>
 
-		<br>
-		<br>
-		<input type="submit" value="feeshare {method}" on:click={() => feeshare_contract()} />		
+			<!-- if method is update, show another div which allows texrt input for a normal address -->
+			{#if method == "update"}
+				<div class="col-25">
+					<label for="new_address">New Withdraw Address</label>
+				</div>
+				<div class="col-75">							
+					{#if new_address.length != juno_addr_len}
+						<style>
+							#new_address {
+								background-color: #ffcccc;
+							}
+						</style>
+					{/if}
+					<input id="new_address" name="new_address" type="text" placeholder="Enter new address" bind:value={new_address} />
+				</div>
+			{/if}
 
-		
-		<br>
-		<label for="contract_addr">Contract Address</label>		
-		<input id="contract_addr" name="contract_addr" type="text" placeholder="Enter contract address" bind:value={contract_addr} />
+		</div>		
 
+		<div class="row">
+			<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />		
+		</div>
 	</div>
 </center>
 
 
 <style>
+	/* make all font 1.2em */
 	* {
-		font-family: 'Nunito Sans', sans-serif;
-	}
-
-	:global(body) {
-		background-color: #ffffff;
-	}
-
-	h1,	
-	h4,
-	p {
-		text-align: center;
-		color: black;
-	}
-
-	#review_text {
-		width: 100%;
+		font-size: 1em;
 	}
 
 	.div_center {
-		border: 1px solid black;
-		padding: 10px;
-		margin: 10px;
-		max-width: 50%;
-		float: none !important;
-		text-align: center;
+		width: 50%;
+		margin: auto;
 	}
 
-	ul {
-		list-style: none;
+	option {				
+		/* make round */
+		border-radius: 0.5em;
 	}
 
-	li {
-		padding-bottom: 10px;
+	.col-25 {
+		float: left;
+		width: 25%;
+		margin-top: 6px;
 	}
 
-	input[type='submit'] {
-		background-color: #5e72e4;
-		color: white;
-		padding: 16px 32px;
-		text-align: center;
-		text-decoration: none;
+	.col-75 {
+		float: left;
+		width: 75%;
+		margin-top: 6px;
+	}
+
+	.row:after {
+		content: "";
+		display: table;
+		clear: both;		
+	}
+
+	label {
+		padding: 12px 12px 12px 0;
 		display: inline-block;
-		font-size: 16px;
-		margin: 4px 2px;
+	}
+
+	input[type=text], select {
+		width: 100%;
+		padding: 12px;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		resize: vertical;
+	}
+
+	input[type=submit] {
+		background-color: #4CAF50;
+		color: white;
+		padding: 12px 20px;
+		border: none;
+		border-radius: 4px;
 		cursor: pointer;
-		border-radius: 8px;
+		float: right;
+		/* margin-right: 5%; */
 	}
 </style>
