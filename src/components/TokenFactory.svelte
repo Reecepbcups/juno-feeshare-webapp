@@ -240,7 +240,7 @@
 			bind:value={method}
 			class="w-1/3 p-2 border border-gray-300 rounded ml-auto text-center"
 		>
-			<option value="create" selected>Create</option>
+			<option value="create" selected>Create (Cost 1 JUNO)</option>
 			<option value="mint">Mint</option>
 			<option value="burn">Burn</option>
 			<option value="changeadmin">Change Admin</option>
