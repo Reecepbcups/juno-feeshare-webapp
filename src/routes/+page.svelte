@@ -43,18 +43,33 @@
 	let controlling_contract_account = ""
 	let contract_label = ""	
 
-	let new_address = ""
+	let new_address = ""	
 </script>
 
 <Toaster />
-<!-- <SvelteToast /> -->
 
 <center>		
+	<a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a>
+	<hr>
+	<br>
+
 	<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
 	<br>
 	<hr>
 
-	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />	
+	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
+			
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<hr>
+	<div class="footer">
+		<ul id="mintscan_links" style="list-style-type: none">			
+		</ul>
+	</div>
+
 </center>
 
 

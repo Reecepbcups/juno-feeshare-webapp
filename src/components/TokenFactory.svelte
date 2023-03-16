@@ -24,7 +24,15 @@
 	last_txs.set('create', 'testtx');
 	const add_tx_hash = (type: string, tx_hash: string) => {		
 		last_txs.set(type, tx_hash);		
-		//may do other things here in the future
+
+		// modify the mintscan_links id to include the tx_hash
+		let mintscan_links = document.getElementById('mintscan_links');
+		if(mintscan_links) {
+			// add a li to the mintscan_links ul
+			let li = document.createElement('li');
+			li.innerHTML = `<a href="https://mintscan.io/juno/txs/${tx_hash}" target="_blank">${type} - ${tx_hash}</a>`;
+			mintscan_links.appendChild(li);
+		}				
 	};
 
 	let user_address = '';
@@ -173,6 +181,17 @@
 				return;
 		}
 
+		let sign_and_broadcast = async function () {
+			
+		}
+
+		// make a popup which shows the message
+		let popup = window.open('', 'popup', 'width=600,height=600');
+		if(popup) {
+			popup.document.write(`<pre>${JSON.stringify(msg, null, 2)}</pre>`);
+			popup.document.write(`<button onclick="window.close()">Close</button>`);						
+		}
+
 		(await signing_client)
 			.signAndBroadcast(address, [msg], fee, 'memo')
 			.then((res) => {
@@ -203,12 +222,11 @@
 				// toast.push(`Error: ${e}`, error);
 				error_notification(`Error: ${e}`);
 			});
+
 	};
-
-
 </script>
 
-<h2 class="text-2xl font-semibold mb-4">Juno TokenFactory</h2>
+<h1 class="text-2xl font-semibold mb-4">Juno TokenFactory</h1>
 
 <!-- on the far right of the sceen, have a side bar which shows the numbers 1 2 and 3 going down via a UL -->
 
@@ -238,7 +256,7 @@
 						id="sub_denom"
 						name="sub_denom"
 						type="text"
-						placeholder="Enter sub denom name"
+						placeholder="Enter sub denom name (ex: rac)"
 						bind:value={sub_denom}
 						class="w-full p-2 border border-gray-300 rounded"
 					/>
