@@ -207,7 +207,7 @@
 					amount: [{ denom: full_denom, amount: amount.toString() }]
 				});
 
-				if (recipient.length >= juno_addr_len) {
+				if (recipient.length < juno_addr_len) {
 					error_notification(`to address ${recipient}\nis not valid`);
 					return;
 				}
