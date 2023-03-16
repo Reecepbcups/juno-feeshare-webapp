@@ -9,9 +9,7 @@
 
 	// Signing (Keplr & Ledger)
 	import type { OfflineAminoSigner } from '@cosmjs/amino';
-	import type { OfflineDirectSigner } from '@cosmjs/proto-signing';
-
-	
+	import type { OfflineDirectSigner } from '@cosmjs/proto-signing';	
 
 	import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    	
 	const toast_style: ToastOptions = {
@@ -19,10 +17,6 @@
 		duration: 6000,
 		style: 'background: #333; color: #fff; width: 15%; font-size: 1.1rem;'
 	};
-
-	// import success_notification from '../components/Status.svelte'
-	// import {error_notification, success_notification} from '../components/Status.svelte'
-	// import { SvelteToast } from '@zerodevx/svelte-toast';
 
 	import '../components/FeeShare.svelte';
 	import '../components/TokenFactory.svelte';
@@ -43,23 +37,29 @@
 	let controlling_contract_account = ""
 	let contract_label = ""	
 
-	let new_address = ""	
+	let new_address = ""
+	
+	let selectedTab = 'FeeShare';	
 </script>
 
 <Toaster />
 
-<center>		
-	<a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a>
-	<hr>
-	<br>
 
+<div class="nav-bar">
+	<button class="nav-button {selectedTab === 'FeeShare' ? 'selected' : ''}" on:click={() => selectedTab = 'FeeShare'}>FeeShare</button>
+	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>		
+</div>
+
+<!-- <a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a> -->
+
+{#if selectedTab === 'FeeShare'}
 	<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
-	<br>
-	<hr>
-
+{:else if selectedTab === 'TokenFactory'}
 	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
+{/if}
+	
 			
-	<br>
+	<!-- <br>
 	<br>
 	<br>
 	<br>
@@ -68,14 +68,34 @@
 	<div class="footer">
 		<ul id="mintscan_links" style="list-style-type: none">			
 		</ul>
-	</div>
-
-</center>
+	</div> -->
 
 
-<style>		
-	/* make all font 1.2em */
-	* {
-		font-size: 1.1em;
+<style>
+	.nav-bar {
+		align-self: flex-start;
+		/* background-color: #444; */
+		display: flex;
+		/* justify-content: space-between; */
+		align-items: center;
+		width: 100%;
+		height: 64px;
+		padding: 16px;
+	}
+
+	.nav-button {
+		margin: 0 8px;
+		padding: 8px 16px;
+		border: none;
+		border-radius: 8px;
+		background-color: #222;
+		color: #f5f5f5;
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	.nav-button.selected {
+		background-color: #f5f5f5;
+		color: #222;
 	}
 </style>
