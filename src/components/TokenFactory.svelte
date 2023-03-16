@@ -339,7 +339,7 @@
 	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
 			<select bind:value={full_denom}>
 	  		{#each my_denoms as denom}
-	  			<option value={denom}>{denom}</option>
+	  			<option value={denom} selected>{denom}</option>
 	  		{/each}
 			</select>
 	  	<input type="text" placeholder="Enter amount to burn" bind:value={amount}>

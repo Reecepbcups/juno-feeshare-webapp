@@ -9,9 +9,7 @@
 
 	// Signing (Keplr & Ledger)
 	import type { OfflineAminoSigner } from '@cosmjs/amino';
-	import type { OfflineDirectSigner } from '@cosmjs/proto-signing';
-
-	
+	import type { OfflineDirectSigner } from '@cosmjs/proto-signing';	
 
 	import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    	
 	const toast_style: ToastOptions = {
@@ -19,10 +17,6 @@
 		duration: 6000,
 		style: 'background: #333; color: #fff; width: 15%; font-size: 1.1rem;'
 	};
-
-	// import success_notification from '../components/Status.svelte'
-	// import {error_notification, success_notification} from '../components/Status.svelte'
-	// import { SvelteToast } from '@zerodevx/svelte-toast';
 
 	import '../components/FeeShare.svelte';
 	import '../components/TokenFactory.svelte';

@@ -131,11 +131,11 @@
 			.then((res) => {
 				console.log(res);
 
-				let URL = `https://www.mintscan.io/juno/txs/${res.transactionHash}`;
-				let html_url = `<a href=${URL}>mintscan.io/juno/txs/${res.transactionHash}</a>`;
+				// let URL = `https://www.mintscan.io/juno/txs/${res.transactionHash}`;
+				// let html_url = `<a href=${URL}>mintscan.io/juno/txs/${res.transactionHash}</a>`;
 				if (res.code == 0) {
 					// toast.push(`Success\n\n${html_url}`, success);
-					success_notification(`Success\n\n${html_url}`);
+					success_notification(`Success\n\n${res.transactionHash}`);
 					// <span>
 					// 	Custom and <b>bold</b>
 					// 	<button on:click={() => toast_.dismiss(toast.id)}>Dismiss</button>
@@ -146,13 +146,13 @@
 					// split the res.rawLog on the last : and get the last part
 
 					if (!res.rawLog) {
-						error_notification(`Error: ${html_url}\n\n${html_url}`);
+						error_notification(`Error: ${res.code}\n\n${res.transactionHash}`);
 						return;
 					}
 
 					let final_log = res.rawLog.split(':').pop();
 
-					error_notification(`Error: ${final_log}\n\n${html_url}`);
+					error_notification(`Error: ${final_log}\n\n${res.transactionHash}`);
 				}
 			})
 			.catch((e) => {
