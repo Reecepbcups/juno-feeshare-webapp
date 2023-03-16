@@ -50,7 +50,7 @@
 <!-- <SvelteToast /> -->
 
 <center>		
-	<!-- <FeeShare rpcEndpoint={rpcEndpoint} fee={fee} /> -->
+	<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
 	<br>
 	<hr>
 

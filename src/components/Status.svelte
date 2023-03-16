@@ -6,7 +6,7 @@
 	const toast_style: ToastOptions = {
 		position: 'top-right',
 		duration: 6000,
-		style: 'background: #333; color: #fff; width: 19%; font-size: 1.1rem; border-radius: 10px;',
+		style: 'background: #333; color: #fff; width: 20%; font-size: 1.0rem; border-radius: 10px;',		
 	};
 
     export function success_notification(message: string) {

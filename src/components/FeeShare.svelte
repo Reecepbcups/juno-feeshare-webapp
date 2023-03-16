@@ -22,8 +22,8 @@
 	let contract_addr = '';
 	let new_address = '';
 
-	const contract_addr_len = 56; // Replace with the correct length
-	const juno_addr_len = 56; // Replace with the correct length
+	const contract_addr_len = 'juno1qsrercqegvs4ye0yqg93knv73ye5dc3prqwd6jcdcuj8ggp6w0us66deup'.length;
+	const juno_addr_len = 'juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0'.length;
 
 	let controlling_contract_account = '';
 
@@ -55,7 +55,7 @@
 			}
 
 			// if admin length is longer than a normal account, its a contract.
-			if (admin.length > 'juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0'.length) {
+			if (admin.length > juno_addr_len) {
 				// if it errors, its not an admin contract.
 				await cw_query.cosmwasm.wasm.v1
 					.contractInfo({ address: contract_addr })
@@ -101,9 +101,9 @@
 		if (controlling_contract_account != address) {
 			// toast.error(`You are not the admin of this contract.`, toast_style);
 			// toast.push(`You are not the admin of this contract.`, error);
-			let controlling_html = `<a href="https://www.mintscan.io/juno/account/${controlling_contract_account}" target="_blank">mintscan.io/account</a>`;
+			// let controlling_html = `<a href="https://www.mintscan.io/juno/account/${controlling_contract_account}" target="_blank">mintscan.io/account</a>`;
 			error_notification(
-				`You are not the admin or creator.<br>You can not modify it.<br><br>Controller: ${controlling_html}`
+				`You are not the admin or creator.\nThey are:\n${controlling_contract_account}`
 			);
 			return;
 		}
@@ -184,10 +184,27 @@
 
 	<div class="row">
 		<div class="col-25">
-			<label for="contract_addr">Contract Address</label>
+			<label for="contract_addr">Contract</label>
 		</div>
 
 		<div class="col-75">
+			<input
+				id="contract_addr"
+				name="contract_addr"
+				type="text"
+				placeholder="Enter contract address"
+				bind:value={contract_addr}
+			/>
+
+
+			{#if new_address.length < juno_addr_len}
+				<style>
+					#withdraw_address {
+						background-color: #ffcccc;
+					}
+				</style>
+			{/if}
+
 			{#if contract_addr.length != contract_addr_len}
 				<style>
 					#contract_addr {
@@ -204,36 +221,49 @@
 				{/await}
 			{/if}
 
-			<input
-				id="contract_addr"
-				name="contract_addr"
+		
+			<!-- <input
+				id="withdraw_address"
+				name="withdraw_address"
 				type="text"
-				placeholder="Enter contract address"
-				bind:value={contract_addr}
-			/>
+				placeholder="Enter Withdraw Rewards Address"
+				bind:value={new_address}
+			/> -->
 		</div>
 
 		{#if method == 'update'}
-			<div class="col-25">
+			<!-- <div class="col-25">
 				<label for="new_address">New Withdraw Address</label>
-			</div>
-			<div class="col-25">
-				{#if new_address.length != juno_addr_len}
-					<style>
-						#new_address {
-							background-color: #ffcccc;
-						}
-					</style>
-				{/if}
+			</div>			 -->
+		{/if}
+
+		<div class="col-75">
+			{#if new_address.length != juno_addr_len}
+				<style>
+					#new_address {
+						background-color: #ffcccc;
+					}
+				</style>
+			{/if}
+
+			{#if method == 'update'}
 				<input
-					id="new_address"
-					name="new_address"
+					id="withdraw_address"
+					name="withdraw_address"
 					type="text"
-					placeholder="Enter new address"
+					placeholder="Enter Receiving Rewards Address"
 					bind:value={new_address}
 				/>
-			</div>
-		{/if}
+			{:else}
+			<input
+				id="withdraw_address"
+				name="withdraw_address"
+				type="text"
+				placeholder="Enter New Rewards Address"
+				bind:value={new_address}
+			/>
+			{/if}
+		</div>
 
 		<div class="row">
 			<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />
