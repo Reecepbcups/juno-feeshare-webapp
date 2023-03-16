@@ -43,23 +43,57 @@
 	let controlling_contract_account = ""
 	let contract_label = ""	
 
-	let new_address = ""	
+	let new_address = ""
+	
+	let selectedTab = 'FeeShare';
 </script>
 
 <Toaster />
 
+<link rel="stylesheet" href="style/style.css" />
+
+<style>
+	.nav-bar {
+		align-self: flex-start;
+		/* background-color: #444; */
+		display: flex;
+		/* justify-content: space-between; */
+		align-items: center;
+		width: 100%;
+		height: 64px;
+		padding: 16px;
+	}
+
+	.nav-button {
+		margin: 0 8px;
+		padding: 8px 16px;
+		border: none;
+		border-radius: 8px;
+		background-color: #222;
+		color: #f5f5f5;
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	.nav-button.selected {
+		background-color: #f5f5f5;
+		color: #222;
+	}
+</style>
+
+<div class="nav-bar">
+	<button class="nav-button {selectedTab === 'FeeShare' ? 'selected' : ''}" on:click={() => selectedTab = 'FeeShare'}>FeeShare</button>
+	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>
+</div>
+
+
 <center>		
-	<a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a>
-	<hr>
-	<br>
+	<!-- <a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a> -->
 
-	<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
-	<br>
-	<hr>
-
+	<!-- <FeeShare rpcEndpoint={rpcEndpoint} fee={fee} /> -->
 	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
 			
-	<br>
+	<!-- <br>
 	<br>
 	<br>
 	<br>
@@ -68,14 +102,6 @@
 	<div class="footer">
 		<ul id="mintscan_links" style="list-style-type: none">			
 		</ul>
-	</div>
+	</div> -->
 
 </center>
-
-
-<style>		
-	/* make all font 1.2em */
-	* {
-		font-size: 1.1em;
-	}
-</style>
