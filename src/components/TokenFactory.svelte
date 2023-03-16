@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { osmosis, getSigningOsmosisClient } from 'juno-network';
+	import { osmosis, cosmos, getSigningOsmosisClient } from 'juno-network';
 	import { get_wallet_for_chain } from '../wallet';
 	import type { OfflineSigner } from '@cosmjs/proto-signing';
 	import { error_notification, success_notification } from '../components/Status.svelte';
@@ -56,6 +56,8 @@
 		console.log(my_denoms);
 		return my_denoms;
 	};
+
+	let to_address = '';
 
 	let display = '';
 	let description = '';
@@ -131,6 +133,29 @@
 				}
 				break;
 
+			case 'send':
+				const { send } = cosmos.bank.v1beta1.MessageComposer.withTypeUrl;
+				msg = send({
+					fromAddress: address,
+					toAddress: to_address,
+					amount: [{ denom: full_denom, amount: amount.toString() }]
+				});
+
+				if (to_address.length >= juno_addr_len) {
+					error_notification(`to address ${to_address}\nis not valid`);
+					return;
+				}
+
+				if (full_denom.length == 0) {
+					error_notification('Denom cannot be empty');
+					return;
+				}				
+				if (amount <= 0) {
+					error_notification('Amount must be greater than 0');
+					return;
+				}
+				break;
+
 			case 'metadata':
 				const { setDenomMetadata } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
 				ticker = ticker.toUpperCase();
@@ -179,10 +204,6 @@
 			default:
 				alert('msg is undefined');
 				return;
-		}
-
-		let sign_and_broadcast = async function () {
-			
 		}
 
 		// make a popup which shows the message
@@ -245,6 +266,7 @@
 			<option value="burn">Burn</option>
 			<option value="changeadmin">Change Admin</option>
 			<option value="metadata">Metadata</option>
+			<option value="send">Send Tokens</option>
 		</select>
 	</div>
 
@@ -271,6 +293,8 @@
 					class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
 				/>
 			</div>
+
+			
 		{:else if method == 'burn'}
 			<br />
 			<div class="flex mb-4">
@@ -324,6 +348,73 @@
 					</center>
 				</div>
 			{/if}
+
+
+		{:else if method == 'send'}
+			<br />
+			<div class="flex mb-4">
+				<center>
+					<input
+						type="submit"
+						value="Get Current Denoms"
+						on:click={() => query_my_denoms()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</center>
+			</div>
+			<br />
+
+			{#if my_denoms.length > 0}
+				<div class="w-3/4" style="margin-top: 5%;">
+					<select
+						id="denom"
+						name="denom"
+						bind:value={full_denom}
+						class="w-full p-2 border border-gray-300 rounded"
+					>
+						{#each my_denoms as denom, idx}
+							<option value={denom}>{denom}</option>
+						{/each}
+					</select>
+
+					<!-- send to_address -->
+					<input
+						id="to_address"
+						name="to_address"
+						type="text"
+						placeholder="Enter address to send to"
+						bind:value={to_address}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+
+					<input
+						id="amount"
+						name="amount"
+						type="number"
+						placeholder="0"
+						bind:value={amount}
+						min="0"
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+				</div>
+
+				<div class="flex mb-4">
+					<input
+						type="submit"
+						value={method}
+						on:click={() => tf_execute()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</div>
+			{:else}
+				<div class="flex mb-4">
+					<center>
+						<p>No denoms found</p>
+					</center>
+				</div>
+			{/if}
+
+
 		{:else if method == 'changeadmin'}
 			<br />
 			<div class="flex mb-4">
