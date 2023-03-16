@@ -45,12 +45,37 @@
 
 	let new_address = ""
 	
-	let selectedTab = 'FeeShare';
+	let selectedTab = 'FeeShare';	
 </script>
 
 <Toaster />
 
-<link rel="stylesheet" href="style/style.css" />
+
+<div class="nav-bar">
+	<button class="nav-button {selectedTab === 'FeeShare' ? 'selected' : ''}" on:click={() => selectedTab = 'FeeShare'}>FeeShare</button>
+	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>		
+</div>
+
+<!-- <a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a> -->
+
+{#if selectedTab === 'FeeShare'}
+	<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
+{:else if selectedTab === 'TokenFactory'}
+	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
+{/if}
+	
+			
+	<!-- <br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<hr>
+	<div class="footer">
+		<ul id="mintscan_links" style="list-style-type: none">			
+		</ul>
+	</div> -->
+
 
 <style>
 	.nav-bar {
@@ -80,28 +105,3 @@
 		color: #222;
 	}
 </style>
-
-<div class="nav-bar">
-	<button class="nav-button {selectedTab === 'FeeShare' ? 'selected' : ''}" on:click={() => selectedTab = 'FeeShare'}>FeeShare</button>
-	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>
-</div>
-
-
-<center>		
-	<!-- <a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a> -->
-
-	<!-- <FeeShare rpcEndpoint={rpcEndpoint} fee={fee} /> -->
-	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
-			
-	<!-- <br>
-	<br>
-	<br>
-	<br>
-	<br>
-	<hr>
-	<div class="footer">
-		<ul id="mintscan_links" style="list-style-type: none">			
-		</ul>
-	</div> -->
-
-</center>

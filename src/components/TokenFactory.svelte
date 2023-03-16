@@ -78,14 +78,12 @@
 	let chain_id = 'juno-1';
 
 	let method = 'create';
-	const juno_addr_len = 56; // Replace with the correct length
+	const juno_addr_len = 43; // normal user addr
 
 	let sub_denom = '';
 	let full_denom = '';
 	let new_admin = '';
-	let amount = 0;
-
-	let show_last_txs = false
+	let amount = 0;	
 
 	// let last_tx_hashes: string[] = [];
 	let last_txs = new Map<string, string>();
@@ -182,16 +180,16 @@
 				}
 				break;
 
-			case 'changeadmin':
+			case 'change admin':
 				const { changeAdmin } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
 				msg = changeAdmin({
 					sender: address,
 					denom: full_denom,
 					newAdmin: new_admin
 				});
-
-				if (new_admin.length >= juno_addr_len) {
-					error_notification('New admin address is not valid');
+								
+				if (new_admin.length <= juno_addr_len) {
+					error_notification('New admin address is not valid');					
 					return;
 				}
 
@@ -323,17 +321,20 @@
 
 	<form on:submit={tf_execute}>
 
+	  <!-- Selector for actions to do -->
 	  <select bind:value={method}>		
 		<option value="create" selected>Create (Cost 1 JUNO)</option>
 		<option value="mint">Mint</option>
 		<option value="burn">Burn</option>
-		<option value="changeadmin">Change Admin</option>
+		<option value="change admin">Change Admin</option>
 		<option value="metadata">Metadata</option>
 		<option value="send">Send Tokens</option>
 	  </select>
 
+	  <!-- if statements for the actuals -->
 	  {#if method == 'create'}
 	  	<input type="text" placeholder="Enter sub denom name (ex: rac)" bind:value={sub_denom}>
+
 	  {:else if method == 'burn'}
 	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
 			<select bind:value={full_denom}>
@@ -342,6 +343,7 @@
 	  		{/each}
 			</select>
 	  	<input type="text" placeholder="Enter amount to burn" bind:value={amount}>
+
 	  {:else if method == 'mint'}
 	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
 			<select bind:value={full_denom}>
@@ -350,7 +352,8 @@
 	  		{/each}
 			</select>
 			<input type="text" placeholder="Enter amount to mint" bind:value={amount}>
-	  {:else if method == 'changeadmin'}
+
+	  {:else if method == 'change admin'}
 	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
 			<select bind:value={full_denom}>
 	  		{#each my_denoms as denom}
@@ -358,6 +361,7 @@
 	  		{/each}
 			</select>
 			<input type="text" placeholder="Enter new admin address" bind:value={new_admin}>
+
 	  {:else if method == 'metadata'}
 	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
 			<select bind:value={full_denom}>
@@ -368,6 +372,7 @@
 			<input type="text" placeholder="Enter ticker" bind:value={ticker}>
 			<input type="text" placeholder="Enter display" bind:value={display}>
 			<input type="text" placeholder="Enter exponent" bind:value={exponent}>
+
 	  {:else if method == 'send'}
 	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
 			<select bind:value={full_denom}>
@@ -376,11 +381,11 @@
 	  		{/each}
 			</select>
 			<input type="text" placeholder="Enter amount to send" bind:value={amount}>
-			<input type="text" placeholder="Enter recipient address" bind:value={recipient}>			
+			<input type="text" placeholder="Enter recipient address" bind:value={recipient}>
 	  {/if}
 	  
 	  <!-- <input type="text" placeholder="Input 1" bind:value={input1Value}>
 	  <input type="text" placeholder="Input 2" bind:value={input2Value}> -->
-	  <input type="submit" value="Submit">
+	  <input type="submit" value="{method}">
   	</form>
   </div>

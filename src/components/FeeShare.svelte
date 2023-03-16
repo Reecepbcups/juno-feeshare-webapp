@@ -163,164 +163,113 @@
 	};
 </script>
 
-<h1>Juno FeeShare</h1>
 
-{#if contract_label.length > 0}
+<!-- {#if contract_label.length > 0}
 	<h2>Contract: {contract_label}</h2>
-{/if}
-
-<div id="feeshare" class="div_center">
-	<div class="row">
-		<div class="col-25">
-			<label for="contract_label">Method</label>
-		</div>
-		<div class="col-75">
-			<select id="contract_label" name="contract_label" bind:value={method}>
-				<option value="register" selected>Register</option>
-				<option value="update">Update</option>
-			</select>
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="col-25">
-			<label for="contract_addr">Contract</label>
-		</div>
-
-		<div class="col-75">
-			<input
-				id="contract_addr"
-				name="contract_addr"
-				type="text"
-				placeholder="Enter contract address"
-				bind:value={contract_addr}
-			/>
+{/if} -->
 
 
-			{#if new_address.length < juno_addr_len}
-				<style>
-					#withdraw_address {
-						background-color: #ffcccc;
-					}
-				</style>
-			{/if}
 
-			{#if contract_addr.length != contract_addr_len}
-				<style>
-					#contract_addr {
-						background-color: #ffcccc;
-					}
-				</style>
-			{:else}
+<div id="feeshare" class="container">
+	<h1>Juno Feeshare</h1>
+
+	<form on:submit={feeshare_contract}>
+
+		<select bind:value={method}>		
+			<option value="register" selected>Register</option>
+			<option value="update">Update</option>
+		</select>
+
+		<input id="contract_addr" type="text" placeholder="Enter contract address" bind:value={contract_addr}>
+
+		{#if method == 'register'}			
+			{#if new_address.length >= juno_addr_len}
 				{#await query_contract_info()}
 					<!-- <p>awaiting...</p> -->
 				{:then res}
 					<!-- <p>resolved: {res}</p> -->
 				{:catch error}
 					<!-- <p>rejected: {error.message}</p> -->
-				{/await}
+				{/await}					
 			{/if}
+
+			<input id="withdraw_address" type="text" placeholder="Enter withdraw address" bind:value={new_address}>
 
 		
-			<!-- <input
-				id="withdraw_address"
-				name="withdraw_address"
-				type="text"
-				placeholder="Enter Withdraw Rewards Address"
-				bind:value={new_address}
-			/> -->
-		</div>
+		{:else if method == 'update'}
+			<!-- new withdraw adderss -->
+			<input id="withdraw_address" type="text" placeholder="Enter new withdraw address" bind:value={new_address}>
+		{/if}		
 
-		{#if method == 'update'}
-			<!-- <div class="col-25">
-				<label for="new_address">New Withdraw Address</label>
-			</div>			 -->
-		{/if}
+		<input type="submit" value="{method}">
+	</form>
 
-		<div class="col-75">
-			{#if new_address.length != juno_addr_len}
-				<style>
-					#new_address {
-						background-color: #ffcccc;
-					}
-				</style>
-			{/if}
-
-			{#if method == 'update'}
-				<input
-					id="withdraw_address"
-					name="withdraw_address"
-					type="text"
-					placeholder="Enter Receiving Rewards Address"
-					bind:value={new_address}
-				/>
-			{:else}
-			<input
-				id="withdraw_address"
-				name="withdraw_address"
-				type="text"
-				placeholder="Enter New Rewards Address"
-				bind:value={new_address}
-			/>
-			{/if}
-		</div>
-
-		<div class="row">
-			<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />
-		</div>
-	</div>
 </div>
 
 <style>
-	.div_center {
-		width: 50%;
-		margin: auto;
+	* {
+    font-size: 1.0em;
 	}
 
-	option {
-		/* make round */
-		border-radius: 0.5em;
+	.container {
+		background-color: #333;
+		padding: 24px;
+		border-radius: 16px;
+		width: 80%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		margin: 0 auto;
 	}
 
-	.col-25 {
-		float: left;
-		width: 25%;
-		margin-top: 6px;
-	}
-
-	.col-75 {
-		float: left;
-		width: 75%;
-		margin-top: 6px;
-	}
-
-	.row:after {
-		content: '';
-		display: table;
-		clear: both;
-	}
-
-	label {
-		padding: 12px 12px 12px 0;
-		display: inline-block;
-	}
-
-	input[type='text'],
-	select {
-		width: 100%;
-		padding: 12px;
-		border: 1px solid #ccc;
-		border-radius: 4px;
-		resize: vertical;
-	}
-
-	input[type='submit'] {
-		background-color: #4caf50;
-		color: white;
-		padding: 12px 20px;
+	input[type="text"] {
+		margin: 8px;
+		padding: 8px;
 		border: none;
-		border-radius: 4px;
+		border-radius: 8px;
+		background-color: #222;
+		color: #fff;
+		font-size: 16px;
+		width: 98%; 
+		/* idk why this input is longer than the select, but width-2 fixes it. Select has the same formating values */
+	}
+	select {
+		margin: 8px;
+		padding: 8px;
+		border: none;
+		border-radius: 8px;
+		background-color: #222;
+		color: #fff;
+		font-size: 16px;
+		width: 100%;
+	}
+
+	input[type="submit"] {
+		margin: 16px;
+		padding: 8px 16px;
+		border: none;
+		border-radius: 8px;
+		background-color: #f5f5f5;
+		color: #222;
+		font-size: 16px;
 		cursor: pointer;
-		float: right;
+	}
+
+	button {
+		margin: 8px;
+		padding: 8px 16px;
+		border: none;
+		border-radius: 8px;
+		background-color: #f6f6f6;
+		color: #000;
+		font-size: 16px;
+		cursor: pointer;
+	}
+
+	h1 {
+		font-size: 48px;
+		margin-bottom: 32px;
+		text-align: center;
 	}
 </style>
