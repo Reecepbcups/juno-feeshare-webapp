@@ -1,34 +1,20 @@
 <script lang="ts" context="module">
-    import { toast, SvelteToast } from '@zerodevx/svelte-toast'			
-	import type {SvelteToastOptions} from '@zerodevx/svelte-toast/stores'
+    // import { toast, SvelteToast } from '@zerodevx/svelte-toast'			
+	// import type {SvelteToastOptions} from '@zerodevx/svelte-toast/stores'
 
-    const toast_default_style: SvelteToastOptions = {
-		initial: 0,
+	import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    	
+	const toast_style: ToastOptions = {
+		position: 'top-right',
 		duration: 6000,
-		dismissable: true,		
+		style: 'background: #333; color: #fff; width: 19%; font-size: 1.1rem; border-radius: 10px;',
 	};
 
-	const error_fmt: SvelteToastOptions = {
-		theme: {
-			'--toastBackground': 'red',
-			'--toastColor': 'black',			
-		},		
-		...toast_default_style
-	}
-	const success_fmt: SvelteToastOptions = {
-		theme: {
-			'--toastBackground': 'green',
-			'--toastColor': 'black',			
-		},		
-		...toast_default_style
-	}    
-
     export function success_notification(message: string) {
-        toast.push(message, success_fmt);
+        toast.success(message, toast_style);
     }
 
     export function error_notification(message: string) {
-        toast.push(message, error_fmt);
+		toast.error(message, toast_style);
     }    
 
 </script>

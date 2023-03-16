@@ -163,6 +163,8 @@
 	};
 </script>
 
+<h1>Juno FeeShare</h1>
+
 {#if contract_label.length > 0}
 	<h2>Contract: {contract_label}</h2>
 {/if}

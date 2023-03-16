@@ -1,12 +1,5 @@
 <script lang="ts">
-	import {
-		juno,
-		cosmwasm,
-		osmosis,
-		router,
-		getSigningJunoClient,
-		getSigningOsmosisClient
-	} from 'juno-network';
+	import { osmosis, getSigningOsmosisClient } from 'juno-network';
 	import { get_wallet_for_chain } from '../wallet';
 	import type { OfflineSigner } from '@cosmjs/proto-signing';
 	import { error_notification, success_notification } from '../components/Status.svelte';
@@ -16,13 +9,23 @@
 	export let fee = { amount: [{ amount: '1000', denom: 'ujuno' }], gas: '200000' };
 	let chain_id = 'juno-1';
 
-	let method = 'create';	
+	let method = 'create';
 	const juno_addr_len = 56; // Replace with the correct length
 
 	let sub_denom = '';
 	let full_denom = '';
 	let new_admin = '';
 	let amount = 0;
+
+	let show_last_txs = false
+
+	// let last_tx_hashes: string[] = [];
+	let last_txs = new Map<string, string>();
+	last_txs.set('create', 'testtx');
+	const add_tx_hash = (type: string, tx_hash: string) => {		
+		last_txs.set(type, tx_hash);		
+		//may do other things here in the future
+	};
 
 	let user_address = '';
 	let my_denoms: string[] = [];
@@ -46,12 +49,17 @@
 		return my_denoms;
 	};
 
+	let display = '';
+	let description = '';
+	let ticker = '';
+	let exponent = 6;
+	let uri_link = '';
 	const tf_execute = async () => {
 		let signer: OfflineSigner = await get_wallet_for_chain(chain_id);
 		let address = (await signer.getAccounts())[0].address;
 
 		let msg;
-		let signing_client = getSigningOsmosisClient({ rpcEndpoint, signer });
+		let signing_client = getSigningOsmosisClient({ rpcEndpoint, signer });		
 
 		switch (method) {
 			case 'create':
@@ -60,6 +68,11 @@
 					sender: address,
 					subdenom: sub_denom
 				});
+
+				if (sub_denom.length == 0) {
+					error_notification('Subdenom cannot be empty');
+					return;
+				}
 				break;
 
 			// todo, add a mint and burn in 1. make a Tx builder class?
@@ -70,6 +83,11 @@
 					// Coin
 					amount: { denom: full_denom, amount: amount.toString() }
 				});
+
+				if (amount <= 0) {
+					error_notification('Amount must be greater than 0');
+					return;
+				}
 				break;
 
 			case 'burn':
@@ -79,43 +97,75 @@
 					// Coin
 					amount: { denom: full_denom, amount: amount.toString() }
 				});
+
+				if (amount <= 0) {
+					error_notification('Amount must be greater than 0');
+					return;
+				}
 				break;
 
-			case 'change':
+			case 'changeadmin':
 				const { changeAdmin } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
 				msg = changeAdmin({
 					sender: address,
 					denom: full_denom,
 					newAdmin: new_admin
 				});
+
+				if (new_admin.length >= juno_addr_len) {
+					error_notification('New admin address is not valid');
+					return;
+				}
+
+				if (full_denom.length == 0) {
+					error_notification('Denom cannot be empty');
+					return;
+				}
 				break;
 
 			case 'metadata':
 				const { setDenomMetadata } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
+				ticker = ticker.toUpperCase();
 				msg = setDenomMetadata({
 					sender: address,
 					metadata: {
-						description: 'description',
+						description: description,
 						base: full_denom,
-						display: 'display',
-						name: 'display',
-						symbol: 'TICKER',
+						display: ticker,
+						name: display,
+						symbol: ticker,
 						denomUnits: [
 							{
-								aliases: ['TICKER'],
+								aliases: [ticker],
 								denom: full_denom,
 								exponent: 0
 							},
 							{
 								aliases: [full_denom],
-								denom: 'TICKER',
-								exponent: 6
+								denom: ticker,
+								exponent: exponent
 							}
 						],
-						uri: '', // on or off chain URL
-						uriHash: '' // sha256 of this URL, optional
+						uri: uri_link,
+						uriHash: ''
 					}
 				});
+				if (ticker.length == 0) {
+					error_notification('Ticker cannot be empty');
+					return;
+				}
+				if (display.length == 0) {
+					error_notification('Display cannot be empty');
+					return;
+				}
+				if (full_denom.length == 0) {
+					error_notification('Denom cannot be empty');
+					return;
+				}
+				if (exponent <= 0 || exponent >= 100) {
+					error_notification('Exponent must be between 1 and 99');
+					return;
+				}
 				break;
 
 			default:
@@ -128,29 +178,25 @@
 			.then((res) => {
 				console.log(res);
 
-				let URL = `https://www.mintscan.io/juno/txs/${res.transactionHash}`;
-				let html_url = `<a href=${URL}>mintscan.io/juno/txs/${res.transactionHash}</a>`;
-				if (res.code == 0) {
-					// toast.push(`Success\n\n${html_url}`, success);
-					success_notification(`Success\n\n${html_url}`);
-					// <span>
-					// 	Custom and <b>bold</b>
-					// 	<button on:click={() => toast_.dismiss(toast.id)}>Dismiss</button>
-					// </span>
-				} else {
-					// toast.push(`Error: ${res.rawLog}\n\n${html_url}`, error);
+				const tx = res.transactionHash;
+				const code = res.code;
 
-					// split the res.rawLog on the last : and get the last part
+				// let URL = `https://www.mintscan.io/juno/txs/${res.transactionHash}`;
+				// let html_url = `<a href=${URL}>mintscan.io/juno/txs/${res.transactionHash}</a>`;
+				if (code == 0) {
+					success_notification(`Success\n\n${tx}`);
+				} else {
+					let final_log = res.rawLog?.split(':').pop();
 
 					if (!res.rawLog) {
-						error_notification(`Error: ${html_url}\n\n${html_url}`);
+						error_notification(`Error: ${code}\n\n${tx}`);
 						return;
 					}
 
-					let final_log = res.rawLog.split(':').pop();
-
-					error_notification(`Error: ${final_log}\n\n${html_url}`);
+					error_notification(`Error: (${code})\n${final_log}\n\n${tx}`);
 				}
+
+				add_tx_hash(method, tx);
 			})
 			.catch((e) => {
 				console.log(e);
@@ -158,109 +204,336 @@
 				error_notification(`Error: ${e}`);
 			});
 	};
+
+
 </script>
 
-<h2>Juno TokenFactory</h2>
+<h2 class="text-2xl font-semibold mb-4">Juno TokenFactory</h2>
+
+<!-- on the far right of the sceen, have a side bar which shows the numbers 1 2 and 3 going down via a UL -->
+
+
 
 <div id="tokenfactory" class="div_center">
-	<div class="row">
-		<div class="col-25">
-			<label for="contract_label">Method</label>
-		</div>
-		<div class="col-75">
-			<select id="contract_label" name="contract_label" bind:value={method}>
-				<option value="create" selected>Create</option>
-				<option value="mint">Mint</option>
-				<!-- <option value="burn">Burn</option>
-				<option value="change">Change Admin</option>
-				<option value="metadata">Metadata</option> -->
-			</select>
-		</div>
+	<div class="flex items-center mb-4">
+		<select
+			id="contract_label"
+			name="contract_label"
+			bind:value={method}
+			class="w-1/3 p-2 border border-gray-300 rounded ml-auto text-center"
+		>
+			<option value="create" selected>Create</option>
+			<option value="mint">Mint</option>
+			<option value="burn">Burn</option>
+			<option value="changeadmin">Change Admin</option>
+			<option value="metadata">Metadata</option>
+		</select>
 	</div>
 
-	<div class="row">
+	<div>
 		{#if method == 'create'}
-			<div class="col-25">
-				<label for="sub_denom">Sub Denom</label>
+			<div class="flex mb-4">
+				<div class="w-3/4">
+					<input
+						id="sub_denom"
+						name="sub_denom"
+						type="text"
+						placeholder="Enter sub denom name"
+						bind:value={sub_denom}
+						class="w-full p-2 border border-gray-300 rounded"
+					/>
+				</div>
 			</div>
-			<div class="col-75">
+
+			<div class="flex mb-4">
 				<input
-					id="sub_denom"
-					name="sub_denom"
+					type="submit"
+					value={method}
+					on:click={() => tf_execute()}
+					class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+				/>
+			</div>
+		{:else if method == 'burn'}
+			<br />
+			<div class="flex mb-4">
+				<center>
+					<input
+						type="submit"
+						value="Get Current Denoms"
+						on:click={() => query_my_denoms()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</center>
+			</div>
+			<br />
+
+			{#if my_denoms.length > 0}
+				<div class="w-3/4" style="margin-top: 5%;">
+					<select
+						id="denom"
+						name="denom"
+						bind:value={full_denom}
+						class="w-full p-2 border border-gray-300 rounded"
+					>
+						{#each my_denoms as denom, idx}
+							<option value={denom}>{denom}</option>
+						{/each}
+					</select>
+
+					<input
+						id="amount"
+						name="amount"
+						type="number"
+						placeholder="0"
+						bind:value={amount}
+						min="0"
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+				</div>
+
+				<div class="flex mb-4">
+					<input
+						type="submit"
+						value={method}
+						on:click={() => tf_execute()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</div>
+			{:else}
+				<div class="flex mb-4">
+					<center>
+						<p>No denoms found</p>
+					</center>
+				</div>
+			{/if}
+		{:else if method == 'changeadmin'}
+			<br />
+			<div class="flex mb-4">
+				<center>
+					<input
+						type="submit"
+						value="Get Current Denoms"
+						on:click={() => query_my_denoms()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</center>
+			</div>
+			<br />
+
+			{#if my_denoms.length > 0}
+				<div class="w-3/4" style="margin-top: 5%;">
+					<select
+						id="denom"
+						name="denom"
+						bind:value={full_denom}
+						class="w-full p-2 border border-gray-300 rounded"
+					>
+						{#each my_denoms as denom, idx}
+							<option value={denom}>{denom}</option>
+						{/each}
+					</select>
+
+					<!-- text input with exact length of juno-address -->
+					<input
+						id="new_admin"
+						name="new_admin"
+						type="text"
+						placeholder="Enter new admin address"
+						bind:value={new_admin}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+				</div>
+
+				<div class="flex mb-4">
+					<input
+						type="submit"
+						value={method}
+						on:click={() => tf_execute()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</div>
+				<!-- manual input box for a denom. This needs to be used for the Mint section as well? (until we get a query who is the admin of a denom query)-->
+			{:else}
+				<input
+					id="denom"
+					name="denom"
 					type="text"
-					placeholder="Enter sub denom"
-					bind:value={sub_denom}
-				/>
-			</div>
-
-			<!-- button, on click call tf_execute -->
-			<div class="row">
-				<input type="submit" value={method} on:click={() => tf_execute()} />
-			</div>
-
-
-		{:else if method == 'mint'}
-			<!-- button on click call query_my_denoms -->
-			<input type="submit" value="Query My Denoms" on:click={() => query_my_denoms()} />
-			<br />
-			<br />
-			
-
-			<div class="col-25">
-				<label for="sub_denom">Denom</label>
-			</div>
-
-
-			<!-- drop down selector using denoms -->
-			<select id="denom" name="denom" bind:value={full_denom}>
-				{#each my_denoms as denom, idx}			
-					<!-- abstract away entire token name toggle? -->
-					{#if idx == 1}
-						<option value={denom} selected>{denom}</option>
-					{:else}
-						<option value={denom}>{denom}</option>
-					{/if}					
-				{/each}				
-			</select>
-
-			<input
-					id="amount"
-					name="amount"
-					type="number"
-					placeholder="0"
-					bind:value={amount}
+					placeholder="Enter full denom manually"
+					bind:value={full_denom}
+					class="w-full p-2 border border-gray-300 rounded mb-4"
 				/>
 
-				<div class="row">
-					<input type="submit" value={method} on:click={() => tf_execute()} />
-				</div>					
-		{/if}
+				<!-- if full_denom length > 0, show an input for the admin text box and a button to submit -->
+				{#if full_denom.length > 0}
+					<input
+						id="new_admin"
+						name="new_admin"
+						type="text"
+						placeholder="Enter new admin address"
+						bind:value={new_admin}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
 
-		{#if method == 'update'}
-			<div class="col-25">
-				<label for="new_address">New Admin</label>
-			</div>
-			<div class="col-25">
-				<!-- {#if new_address.length != juno_addr_len}
-					<style>
-						#new_address {
-							background-color: #ffcccc;
-						}
-					</style>
+					<div class="flex mb-4">
+						<input
+							type="submit"
+							value={method}
+							on:click={() => tf_execute()}
+							class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+						/>
+					</div>
+				{:else}
+					<div class="flex mb-4">
+						<center>
+							<p>No denoms found</p>
+						</center>
+					</div>
 				{/if}
-				<input
-					id="new_address"
-					name="new_address"
-					type="text"
-					placeholder="Enter new address"
-					bind:value={new_address}
-				/> -->
+			{/if}
+		{:else if method == 'mint'}
+			<br />
+			<div class="flex mb-4">
+				<center>
+					<input
+						type="submit"
+						value="Get Current Denoms"
+						on:click={() => query_my_denoms()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</center>
 			</div>
-		{/if}
+			<br />
 
-		<!-- <div class="row">
-			<input type="submit" value="{method} contract" on:click={() => feeshare_contract()} />
-		</div> -->
+			{#if my_denoms.length > 0}
+				<div class="w-3/4" style="margin-top: 5%;">
+					<select
+						id="denom"
+						name="denom"
+						bind:value={full_denom}
+						class="w-full p-2 border border-gray-300 rounded"
+					>
+						{#each my_denoms as denom, idx}
+							<option value={denom}>{denom}</option>
+						{/each}
+					</select>
+
+					<input
+						id="amount"
+						name="amount"
+						type="number"
+						placeholder="0"
+						bind:value={amount}
+						min="0"
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+				</div>
+
+				<div class="flex mb-4">
+					<input
+						type="submit"
+						value={method}
+						on:click={() => tf_execute()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</div>
+			{:else}
+				<div class="flex mb-4">
+					<center>
+						<p>No denoms found</p>
+					</center>
+				</div>
+			{/if}
+		{:else if method == 'metadata'}
+			<br />
+			<div class="flex mb-4">
+				<center>
+					<input
+						type="submit"
+						value="Get Current Denoms"
+						on:click={() => query_my_denoms()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</center>
+			</div>
+			<br />
+
+			{#if my_denoms.length > 0}
+				<div class="w-3/4" style="margin-top: 5%;">
+					<select
+						id="denom"
+						name="denom"
+						bind:value={full_denom}
+						class="w-full p-2 border border-gray-300 rounded"
+					>
+						{#each my_denoms as denom, idx}
+							<option value={denom}>{denom}</option>
+						{/each}
+					</select>
+
+					<!-- display name input -->
+					<input
+						id="display"
+						name="display"
+						type="text"
+						placeholder="Display Name"
+						bind:value={display}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+					<!-- description -->
+					<input
+						id="description"
+						name="description"
+						type="text"
+						placeholder="Description"
+						bind:value={description}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+					<!-- ticker symbol, with current value of $TICKER -->
+					<input
+						id="symbol"
+						name="symbol"
+						type="text"
+						placeholder="Ticker Symbol"
+						bind:value={ticker}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+					<!-- exponent -->
+					<input
+						id="exponent"
+						name="exponent"
+						type="number"
+						placeholder="Exponent"
+						bind:value={exponent}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+
+					<!-- uri data -->
+					<input
+						id="uri"
+						name="uri"
+						type="text"
+						placeholder="URI (optional)"
+						bind:value={uri_link}
+						class="w-full p-2 border border-gray-300 rounded mb-4"
+					/>
+				</div>
+
+				<div class="flex mb-4">
+					<input
+						type="submit"
+						value={method}
+						on:click={() => tf_execute()}
+						class="bg-green-500 text-white py-2 px-4 rounded cursor-pointer ml-auto"
+					/>
+				</div>
+			{:else}
+				<div class="flex mb-4">
+					<center>
+						<p>No denoms found</p>
+					</center>
+				</div>
+			{/if}
+		{/if}
 	</div>
 </div>
 
@@ -275,32 +548,12 @@
 		border-radius: 0.5em;
 	}
 
-	.col-25 {
-		float: left;
-		width: 25%;
-		margin-top: 6px;
-	}
-
-	.col-75 {
-		float: left;
-		width: 75%;
-		margin-top: 6px;
-	}
-
-	.row:after {
-		content: '';
-		display: table;
-		clear: both;
-	}
-
-	label {
-		padding: 12px 12px 12px 0;
-		display: inline-block;
-	}
-
 	input[type='text'],
 	input[type='number'],
 	select {
+		/* increase text size */
+		font-size: 1.1em;
+
 		width: 100%;
 		padding: 12px;
 		border: 1px solid #ccc;
