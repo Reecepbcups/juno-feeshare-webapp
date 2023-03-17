@@ -88,6 +88,42 @@
                 }
 
 				break;
+
+
+            case 'add_whitelist':    
+                // https://github.com/CosmosContracts/tokenfactory-contracts/blob/main/packages/tokenfactory-types/src/msg.rs
+                msg = executeContract({
+                    sender: address,
+                    contract: middleware_contract_address,
+                    funds: [],
+                    msg: Buffer.from(JSON.stringify({
+                        // allows the migrate contract address to mint tokens through the middleware
+                        add_whitelist: { addresses: [migrate_contract_address] }
+                    }))
+                })   
+                                
+                if (migrate_contract_address.length == 0) {
+                    error_notification("Migrate contract address must be set")
+                    return;
+                }
+				break;
+            case 'remove_whitelist':    
+                // https://github.com/CosmosContracts/tokenfactory-contracts/blob/main/packages/tokenfactory-types/src/msg.rs
+                msg = executeContract({
+                    sender: address,
+                    contract: middleware_contract_address,
+                    funds: [],
+                    msg: Buffer.from(JSON.stringify({
+                        // allows the migrate contract address to mint tokens through the middleware
+                        add_whitelist: { addresses: [migrate_contract_address] }
+                    }))
+                })   
+                                
+                if (migrate_contract_address.length == 0) {
+                    error_notification("Migrate contract address must be set")
+                    return;
+                }
+				break;
                 
             case 'migrate_contract':
                 interface IMigrateInitMsg {
@@ -180,7 +216,7 @@
                 error_notification("Error: " + err)
             })
 
-        } else if (method == "reclaim_admin") {
+        } else if (method == "reclaim_admin" || method == "add_whitelist" || method == "remove_whitelist") {
             let cosmwasm_client = getSigningCosmwasmClient({ rpcEndpoint, signer });
             (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
                 console.log(res)
@@ -384,7 +420,7 @@
     <input type="text" placeholder="ORGs TF Middleware" bind:value={middleware_label} />
 
     <!-- instantiate button which calls migrate_execute. Set value method to "middleware" -->
-    <button on:click={() => {method = "middleware"; migrate_execute()}}>Initialize Middleware Contract</button>
+    <button on:click={() => {method = "middleware"; migrate_execute()}}>Initialize Middleware Contract</button>    
 
     <hr>    
 
@@ -441,11 +477,14 @@
 
     <br>
 
-    {#if migrate_contract_address.length != 0}
-        <label for="migrate_contract_address">Migrate Contract Address:</label>
-        <p>Give this address to users to use in the Burn section of this app.</p>
-        <input type="text" placeholder="Migrate Contract Address" bind:value={migrate_contract_address} />
-    {/if}
+   
+    <label for="migrate_contract_address">Migrate Contract Address:</label>
+    <p>Give this address to users to use in the Burn section of this app.</p>
+    <input type="text" placeholder="Migrate Contract Address" bind:value={migrate_contract_address} />
+
+    <button on:click={() => {method = "add_whitelist"; migrate_execute()}}>Allow Migrate to mint TF Denom</button>
+    <!-- remove whitelist button future too -->
+    
 
     <hr>    
 </div>

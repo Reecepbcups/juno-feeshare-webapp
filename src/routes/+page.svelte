@@ -11,6 +11,7 @@
 	import FeeShare from '../components/FeeShare.svelte';
 	import TokenFactory from '../components/TokenFactory.svelte';
 	import Migration from '../components/Migration.svelte';
+	import UserMigration from '../components/UserMigration.svelte';
 
 	const fee = {amount: [{	amount: "100000",	denom: "ujuno",},], gas: "200000",};
 		
@@ -31,7 +32,8 @@
 <div class="nav-bar">
 	<button class="nav-button {selectedTab === 'FeeShare' ? 'selected' : ''}" on:click={() => selectedTab = 'FeeShare'}>FeeShare</button>
 	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>		
-	<button class="nav-button {selectedTab === 'Migration' ? 'selected' : ''}" on:click={() => selectedTab = 'Migration'}>Migration</button>		
+	<button class="nav-button {selectedTab === 'Migration' ? 'selected' : ''}" on:click={() => selectedTab = 'Migration'}>Dev Migration</button>		
+	<button class="nav-button {selectedTab === 'UserMigrate' ? 'selected' : ''}" on:click={() => selectedTab = 'UserMigrate'}>User Migrate</button>		
 
 	<!-- a button which is a link to github -->
 	<button class="nav-button" on:click={() => window.open("https://github.com/reecepbcups/juno-chain-webapp/", "_blank")}>Github</button>
@@ -45,6 +47,8 @@
 	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
 {:else if selectedTab === 'Migration'}	
 	<Migration />
+{:else if selectedTab === 'UserMigrate'}	
+	<UserMigration />
 {/if}
 	
 
