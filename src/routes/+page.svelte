@@ -11,12 +11,13 @@
 	import type { OfflineAminoSigner } from '@cosmjs/amino';
 	import type { OfflineDirectSigner } from '@cosmjs/proto-signing';		
 
-	import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    	
-	const toast_style: ToastOptions = {
-		position: 'top-right',
-		duration: 6000,
-		style: 'background: #333; color: #fff; width: 15%; font-size: 1.1rem;'
-	};
+	// import toast, { Toaster, type ToastOptions } from 'svelte-french-toast';    	
+	// const toast_style: ToastOptions = {
+	// 	position: 'top-right',
+	// 	duration: 6000,
+	// 	style: 'background: #333; color: #fff; width: 15%; font-size: 1.1rem;'
+	// };
+	import { SvelteEasyToast } from 'svelte-easy-toast';
 
 	import '../components/FeeShare.svelte';
 	import '../components/TokenFactory.svelte';
@@ -45,7 +46,8 @@
 	export let selectedTab = 'FeeShare';	
 </script>
 
-<Toaster />
+<!-- <Toaster /> -->
+<SvelteEasyToast />
 
 
 <div class="nav-bar">
