@@ -157,8 +157,12 @@
             return;
         }
 
-        (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
-            success_notification("Success, Tx Hash: " + res.transactionHash)
+        (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {            
+            if (res.code == 0 && !res.rawLog?.toLowerCase().includes("failed")) {
+                success_notification("Success: " + res.transactionHash)
+            } else {
+                error_notification("Error: " + res.rawLog)
+            }
         }).catch((err) => {
             error_notification("Error: " + err)
             console.log(err)
