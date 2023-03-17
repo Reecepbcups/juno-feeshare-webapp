@@ -34,7 +34,7 @@
 		let msg;
 
         const { changeAdmin } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
-        const {instantiateContract} = cosmwasm.wasm.v1.MessageComposer.withTypeUrl;
+        const {instantiateContract, executeContract} = cosmwasm.wasm.v1.MessageComposer.withTypeUrl;
 				        			        
 		switch (method) {
 			case 'middleware':
@@ -70,11 +70,26 @@
 					return;
 				}
 				break;
+
+            case 'reclaim_admin':    
+                // https://github.com/CosmosContracts/tokenfactory-contracts/blob/main/packages/tokenfactory-types/src/msg.rs
+                msg = executeContract({
+                    sender: address,
+                    contract: middleware_contract_address,
+                    funds: [],
+                    msg: Buffer.from(JSON.stringify({
+                        transfer_admin: { new_address: address, denom: denom}
+                    }))
+                })
+                
+                if (!denom.startsWith("factory/")) {
+                    error_notification("Middleware denom must start with factory/")
+                    return;
+                }
+
+				break;
                 
             case 'migrate_contract':
-            // let cw20_burn_address = "";
-            // let native_burn_denom = "";
-
                 interface IMigrateInitMsg {
                     tf_denom: string,
                     contract_minter_address: string,
@@ -125,17 +140,16 @@
                 } else {
                     error_notification("Success: " + res.rawLog)
                 }
-                for (let event of res.events) {
-                    if(event.type == "instantiate") {
-                        for(let attr of event.attributes) {
-                            if(attr.key == "contract_address" || attr.key == "_contract_address") {
-                                success_notification("Contract Address: " + attr.value)
-                                middleware_contract_address = attr.value;
-                                console.log("Middlware Contract Addr: ", middleware_contract_address)
-                            }
-                        }
-                    }
-                }            
+                
+                middleware_contract_address = get_contract_address(res.events);
+                if(middleware_contract_address.length == 0) {
+                    error_notification("No contract address found in events")
+                    return;
+                }
+
+                console.log("Middlware Contract Addr: ", middleware_contract_address)
+                success_notification("Middleware Contract Address: " + middleware_contract_address)
+
                 console.log(res.events)
             }).catch((err) => {
                 error_notification("Error: " + err)
@@ -150,18 +164,31 @@
                 } else {
                     error_notification("Success: " + res.rawLog)
                 }
-                for (let event of res.events) {
-                    if(event.type == "instantiate") {
-                        for(let attr of event.attributes) {
-                            if(attr.key == "contract_address" || attr.key == "_contract_address") {
-                                success_notification("Migrate Contract Address: " + attr.value)
-                                migrate_contract_address = attr.value;
-                                console.log("Migrate Contract Addr: ", migrate_contract_address)
-                            }
-                        }
-                    }
-                }            
+                     
+                
+                migrate_contract_address = get_contract_address(res.events);
+
                 console.log(res.events)
+                if(migrate_contract_address.length == 0) {
+                    error_notification("No contract address found in events")
+                    return;
+                }
+
+                success_notification("Migrate Contract Address: " + migrate_contract_address)                
+                console.log("Migrate Contract Addr: ", migrate_contract_address)                
+            }).catch((err) => {
+                error_notification("Error: " + err)
+            })
+
+        } else if (method == "reclaim_admin") {
+            let cosmwasm_client = getSigningCosmwasmClient({ rpcEndpoint, signer });
+            (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
+                console.log(res)
+                if (res.code == 0) {
+                    success_notification("Success: " + res.transactionHash)
+                } else {
+                    error_notification("Success: " + res.rawLog)
+                }             
             }).catch((err) => {
                 error_notification("Error: " + err)
             })
@@ -182,6 +209,19 @@
         }        
     }  
 
+    const get_contract_address = (events: any): string => {
+        for (let event of events) {
+            if(event.type == "instantiate") {
+                for(let attr of event.attributes) {
+                    if(attr.key == "contract_address" || attr.key == "_contract_address") {
+                        return attr.value; // the contract address
+                    }
+                }
+            }
+        }   
+        return ""; 
+    }
+
 
     let contract_has_admin = false;
     const query_admin = async () => {
@@ -194,29 +234,29 @@
             
             if(admin == middleware_contract_address) {
                 contract_has_admin = true;
-                success_notification(`Success: Contract has admin\n${admin}`)
+                success_notification(`Success: Contract has admin`)
             } else {
                 contract_has_admin = false;
-                error_notification("Contract does not have admin")
+                error_notification(`Contract does not have admin: ${admin}`)
             }
         })
     }
 
-    let middleware_denom = ""
-    const query_denoms_from_middleware_contract = async () => {
-        let cosmwasm_query = cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint});
-        const query_req = Buffer.from(JSON.stringify({get_config:{}}));                
-        (await cosmwasm_query).cosmwasm.wasm.v1.smartContractState({address: middleware_contract_address, queryData: query_req}).then((res) => {            
-            let json = JSON.parse(new TextDecoder().decode(res.data));
-            console.log('get_denoms', json)
-            if(json.denoms) {
-                success_notification("Success, Denom Found: " + json.denoms)
-            } else {
-                error_notification("Error: " + json)
-            }
-            middleware_denom = json.denoms[0]
-        })
-    }
+    // let middleware_denom = ""
+    // const query_denoms_from_middleware_contract = async () => {
+    //     let cosmwasm_query = cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint});
+    //     const query_req = Buffer.from(JSON.stringify({get_config:{}}));                
+    //     (await cosmwasm_query).cosmwasm.wasm.v1.smartContractState({address: middleware_contract_address, queryData: query_req}).then((res) => {            
+    //         let json = JSON.parse(new TextDecoder().decode(res.data));
+    //         console.log('get_denoms', json)
+    //         if(json.denoms) {
+    //             success_notification("Success, Denom Found: " + json.denoms)
+    //         } else {
+    //             error_notification("Error: " + json)
+    //         }
+    //         middleware_denom = json.denoms[0]
+    //     })
+    // }
 
     let burn_type = 'cw20';
     let cw20_burn_address = "";
@@ -240,12 +280,12 @@
             error_notification("Error: " + "not a CW20 (no 'token_info:{}'')")
             console.log(err)
         })
-    }
+    }    
 </script>
 
 <style>
 	* {
-    font-size: 1.0em;
+        font-size: 1.0em;                    
 	}
     
     a {
@@ -256,12 +296,14 @@
 		background-color: #333;
 		padding: 24px;
 		border-radius: 16px;
-		width: 80%;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
 		margin: 0 auto;
+        box-shadow: 15px 20px 30px #444444;
+		border: 1px solid #000;        
 	}
 
 	input[type="text"], input[type="number"] {
@@ -324,8 +366,7 @@
 
 
 <div class="container">    
-    <h1>Developer Migration</h1>
-
+    <h2 class="flex-box">Middleware Contract (Part 1)</h2>
     <p>Launch the TokenFactory & Migrate Burn Contract</p>
     
     <input type="text" placeholder="ChainID" bind:value={chainId} />
@@ -336,7 +377,7 @@
     <label for="mainnet_code_id">Migrate Code ID | <a href="{migrate_url}">tokenfactory-contracts/tokenfactory-core</a></label>
     <input type="number" placeholder="Middleware Code ID" bind:value={middleware_code_id} />
             
-    <label for="denom">Factory Denom</label>
+    <label for="denom">Factory Denom</label>        
     <input type="text" placeholder="factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/reece" bind:value={denom} />        
 
     <label for="mainnet_code_id">Contract Label</label>
@@ -352,16 +393,18 @@
     <input type="text" placeholder="Middleware Contract Address" bind:value={middleware_contract_address} />
 
     <!-- move tokenfactory admin to contract -->    
-    <button on:click={() => {method = "transfer_admin"; migrate_execute()}}>Transfer Admin To Contract</button>
+    <button on:click={() => {method = "transfer_admin"; migrate_execute()}}>Transfer TokenFactory Admin To Contract</button>
 
-    
     <button on:click={() => {query_admin()}}>Query admin and ensure success</button>
-
-    <br>
-    <hr>
-    <hr>
     <hr>
 
+    <!-- a button which transfers admin back from the contract -->
+    <button on:click={() => {method = "reclaim_admin"; migrate_execute()}}>Reclaim Admin from Middleware Contract</button>
+    
+</div>
+
+<div class="container" style="margin-left: 10%;">
+    <h2 class="flex-box">Migrate/Burn Contract (Part 2)</h2>
     <label for="migrate_code_id">Migrate Code ID | <a href="{middleware_url}">tokenfactory-contracts/migrate</a></label>
     <input type="number" placeholder="CW20 / Native burn Migrate Code ID" bind:value={migrate_code_id} />
 
@@ -374,7 +417,7 @@
     {/if} -->
 
     <!-- radio buttons, CW20 and Native -->
-    <label for="burn_type">Burn Denom</label>
+    <label for="burn_type">Denom To Burn</label>
     <select bind:value={burn_type}>
         <option value="cw20" selected>CW20 Contract Address</option>
         <option value="native">Native (ujuno, ibc, factory, etc)</option>
@@ -404,4 +447,5 @@
         <input type="text" placeholder="Migrate Contract Address" bind:value={migrate_contract_address} />
     {/if}
 
+    <hr>    
 </div>
