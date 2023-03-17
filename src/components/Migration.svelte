@@ -6,15 +6,15 @@
     let rpcEndpoint = "https://juno-rpc.reece.sh:443"
     let chainId = "juno-1"
 
-    let denom = "factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/reece";
+    let denom = "factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/js-denom";
     
     import {fromNumber} from 'long';
-
-    let migrate_code_id = 2309;
-    let migrate_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/migrate"
     
-    let middleware_code_id = 2310;  
+    let middleware_code_id = 2323;  
     let middleware_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/tokenfactory_core"
+
+    let migrate_code_id = 2324;
+    let migrate_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/migrate"
 
     import {juno, cosmwasm, osmosis, router, getSigningJunoClient, getSigningOsmosisClient, getSigningCosmwasmClient} from 'juno-network'	
 	import { get_wallet_for_chain } from '../wallet';
@@ -25,8 +25,9 @@
     let middleware_label = "";
 
     // make this "" later
-    let middleware_contract_address = "juno1mh3wfy07spml3fy7f80cg9r83mxkyuszl7mfagtur5vsxp8dgcfsp9fxqj";    
-    let migrate_contract_address = "";
+    let middleware_contract_address = "juno12gvt30u3qsvj4lpdesy5afuz67l5tyyzfu09fe5956rxvgtvykjqdntykz";    
+    let migrate_contract_address = ""; // juno129hwc89t2dauw4czpqv9jrfurlpmu8rufnzpejwkl78sx0xy9apqnjsl2e
+
     const migrate_execute = async () => {
 		let signer: OfflineSigner = await get_wallet_for_chain(chainId);
 		let address = (await signer.getAccounts())[0].address;
@@ -38,6 +39,8 @@
 				        			        
 		switch (method) {
 			case 'middleware':
+                alert(`Launching this contract gets it ready to mint ${denom}. You can do this before you have the denomination, but you WILL need to be admin for the next steps`);
+
                 const init_msg = {
                     allowed_mint_addresses: [],
                     denoms: [denom]
@@ -86,6 +89,8 @@
                     error_notification("Middleware denom must start with factory/")
                     return;
                 }
+
+                alert("Reclaiming admin will take back the denomination from the Middleware Contract Minter, to your account.")
 
 				break;
 
@@ -258,6 +263,26 @@
         return ""; 
     }
 
+    let middleware_allowed_minters: string[] = [];
+    const get_middleware_config = async () => {
+        let cosmwasm_query = cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint});
+
+        let query_req = Buffer.from(JSON.stringify({get_config:{}}));
+
+        (await cosmwasm_query).cosmwasm.wasm.v1.smartContractState({address: middleware_contract_address, queryData: query_req}).then((res) => {
+            let json = JSON.parse(new TextDecoder().decode(res.data));
+            console.log('get_config', json)
+            
+            // https://github.com/CosmosContracts/tokenfactory-contracts/blob/main/contracts/migrate/src/contract.rs#L175            
+            middleware_allowed_minters = json.allowed_minters;
+
+        }).catch((err) => {
+            error_notification("Error: " + err)
+            console.log(err)
+        })
+
+    }
+
 
     let contract_has_admin = false;
     const query_admin = async () => {
@@ -295,7 +320,7 @@
     // }
 
     let burn_type = 'cw20';
-    let cw20_burn_address = "";
+    let cw20_burn_address = ""; // RAW: juno15u3dt79t6sxxa3x3kpkhzsy56edaa5a66wvt3kxmukqjz2sx0hes5sn38g
     let native_burn_denom = "";
     const query_cw20_ensure = async () => {
         let cosmwasm_query = cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint});
@@ -319,7 +344,7 @@
     }    
 </script>
 
-<style>
+<style>    
 	* {
         font-size: 1.0em;                    
 	}
@@ -402,25 +427,26 @@
 
 
 <div class="container">    
-    <h2 class="flex-box">Middleware Contract (Part 1)</h2>
-    <p>Launch the TokenFactory & Migrate Burn Contract</p>
+    <h2 class="flex-box">Middleware Contract (Part 1)</h2>    
     
     <input type="text" placeholder="ChainID" bind:value={chainId} />
     <input type="text" placeholder="RPC URL" bind:value={rpcEndpoint} />    
 
     <hr>
 
+    Setup an admin contract to mint tokens
+
     <label for="mainnet_code_id">Migrate Code ID | <a href="{migrate_url}">tokenfactory-contracts/tokenfactory-core</a></label>
     <input type="number" placeholder="Middleware Code ID" bind:value={middleware_code_id} />
             
-    <label for="denom">Factory Denom</label>        
-    <input type="text" placeholder="factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/reece" bind:value={denom} />        
+    <label for="denom">Initial Factory Denom</label>        
+    <input type="text" placeholder="factory/.../..." bind:value={denom} />        
 
-    <label for="mainnet_code_id">Contract Label</label>
+    <label for="mainnet_code_id">Label</label>
     <input type="text" placeholder="ORGs TF Middleware" bind:value={middleware_label} />
 
     <!-- instantiate button which calls migrate_execute. Set value method to "middleware" -->
-    <button on:click={() => {method = "middleware"; migrate_execute()}}>Initialize Middleware Contract</button>    
+    <button on:click={() => {method = "middleware"; migrate_execute()}}>Setup Middleware Contract</button>    
 
     <hr>    
 
@@ -429,13 +455,13 @@
     <input type="text" placeholder="Middleware Contract Address" bind:value={middleware_contract_address} />
 
     <!-- move tokenfactory admin to contract -->    
-    <button on:click={() => {method = "transfer_admin"; migrate_execute()}}>Transfer TokenFactory Admin To Contract</button>
+    <button on:click={() => {method = "transfer_admin"; migrate_execute()}}>Transfer TF Admin To Contract</button>
 
-    <button on:click={() => {query_admin()}}>Query admin and ensure success</button>
+    <button on:click={() => {query_admin()}}>Ensure contract has admin check</button>
     <hr>
 
     <!-- a button which transfers admin back from the contract -->
-    <button on:click={() => {method = "reclaim_admin"; migrate_execute()}}>Reclaim Admin from Middleware Contract</button>
+    <button on:click={() => {method = "reclaim_admin"; migrate_execute()}} style="background-color:#ff6666;">Reclaim Admin from Middleware Contract</button>
     
 </div>
 
@@ -463,7 +489,15 @@
     {#if burn_type == "cw20"}
         <label for="burn_address">CW20 Burn Address</label>        
         <input type="text" placeholder="Burn Address" bind:value={cw20_burn_address} />    
-        <button on:click={query_cw20_ensure}>query_cw20_ensure</button>
+        <!-- <button on:click={query_cw20_ensure}>query_cw20_ensure</button> -->
+
+        <!-- if length of cw20_burn_address == 52, call query_cw20_ensure without input -->
+        {#if cw20_burn_address.length == 63}
+            {#await query_cw20_ensure()}
+                <!-- <p>Querying CW20 Burn Address</p>             -->
+            {/await}
+        {/if}
+
 
     {:else if burn_type == "native"}
         <label for="burn_address">Native Burn Denom</label>        
@@ -484,7 +518,6 @@
 
     <button on:click={() => {method = "add_whitelist"; migrate_execute()}}>Allow Migrate to mint TF Denom</button>
     <!-- remove whitelist button future too -->
-    
 
     <hr>    
 </div>
