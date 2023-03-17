@@ -167,7 +167,7 @@
             })
 
         } else if (method == "transfer_admin") {
-            let osmosis_client = getSigningOsmosisClient({ rpcEndpoint, signer });	
+            let osmosis_client = getSigningOsmosisClient({ rpcEndpoint, signer });        
 
             (await osmosis_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
                 console.log(res)
@@ -189,10 +189,12 @@
 
         (await osmosis_query).osmosis.tokenfactory.v1beta1.denomAuthorityMetadata({denom: denom}).then((res) => {
             console.log(res)
+
+            let admin = res.authorityMetadata?.admin
             
-            if(res.authorityMetadata?.admin == middleware_contract_address) {
+            if(admin == middleware_contract_address) {
                 contract_has_admin = true;
-                success_notification("Success: Contract has admin")
+                success_notification(`Success: Contract has admin\n${admin}`)
             } else {
                 contract_has_admin = false;
                 error_notification("Contract does not have admin")
