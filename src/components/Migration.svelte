@@ -16,7 +16,7 @@
     let middleware_code_id = 2310;  
     let middleware_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/tokenfactory_core"
 
-    import {juno, cosmwasm, osmosis, router, getSigningJunoClient, getSigningCosmwasmClient} from 'juno-network'	
+    import {juno, cosmwasm, osmosis, router, getSigningJunoClient, getSigningOsmosisClient, getSigningCosmwasmClient} from 'juno-network'	
 	import { get_wallet_for_chain } from '../wallet';
     import type { OfflineSigner } from '@cosmjs/proto-signing';
 	import { error_notification, success_notification } from './Status.svelte';	
@@ -25,13 +25,13 @@
     let middleware_label = "";
 
     // make this "" later
-    let middleware_contract_address = "juno1mh3wfy07spml3fy7f80cg9r83mxkyuszl7mfagtur5vsxp8dgcfsp9fxqj";
+    let middleware_contract_address = "juno1mh3wfy07spml3fy7f80cg9r83mxkyuszl7mfagtur5vsxp8dgcfsp9fxqj";    
     const migrate_execute = async () => {
 		let signer: OfflineSigner = await get_wallet_for_chain(chainId);
 		let address = (await signer.getAccounts())[0].address;
 
 		let msg;
-		let cosmwasm_client = getSigningCosmwasmClient({ rpcEndpoint, signer });		        
+				        			        
 		switch (method) {
 			case 'middleware':
                 const init_msg = {
@@ -56,6 +56,20 @@
                 }
                 break;
 
+            case 'transfer_admin':
+                const { changeAdmin } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
+				msg = changeAdmin({
+					sender: address,
+					denom: denom,
+					newAdmin: middleware_contract_address
+				});
+
+				if (denom.length == 0) {
+					error_notification('Denom cannot be empty');
+					return;
+				}
+				break;                
+
             default: { 
                 error_notification("No method selected")
                 break;
@@ -66,36 +80,67 @@
             error_notification("No message to send")
             return;
         }
-
         
-        
-        (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
-            console.log(res)
-            if (res.code == 0) {
-                success_notification("Success: " + res.transactionHash)
-            } else {
-                error_notification("Success: " + res.rawLog)
-            }
+        if(method == "middleware") {
+            let cosmwasm_client = getSigningCosmwasmClient({ rpcEndpoint, signer });
 
-            for (let event of res.events) {
-                if(event.type == "instantiate") {
-                    for(let attr of event.attributes) {
-                        if(attr.key == "contract_address" || attr.key == "_contract_address") {
-                            success_notification("Contract Address: " + attr.value)
-                            middleware_contract_address = attr.value;
-                            console.log("Middlware Contract Addr: ", middleware_contract_address)
+            (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
+                console.log(res)
+                if (res.code == 0) {
+                    success_notification("Success: " + res.transactionHash)
+                } else {
+                    error_notification("Success: " + res.rawLog)
+                }
+                for (let event of res.events) {
+                    if(event.type == "instantiate") {
+                        for(let attr of event.attributes) {
+                            if(attr.key == "contract_address" || attr.key == "_contract_address") {
+                                success_notification("Contract Address: " + attr.value)
+                                middleware_contract_address = attr.value;
+                                console.log("Middlware Contract Addr: ", middleware_contract_address)
+                            }
                         }
                     }
+                }            
+                console.log(res.events)
+            }).catch((err) => {
+                error_notification("Error: " + err)
+            })
+
+        } else if (method == "transfer_admin") {
+            let osmosis_client = getSigningOsmosisClient({ rpcEndpoint, signer });	
+
+            (await osmosis_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
+                console.log(res)
+                if (res.code == 0) {
+                    success_notification("Success: " + res.transactionHash)
+                } else {
+                    error_notification("Error: " + res.rawLog)
                 }
-            }
-            
-            console.log(res.events)
-
-        }).catch((err) => {
-            error_notification("Error: " + err)
-        })
-
+            }).catch((err) => {
+                error_notification("Error: " + err)
+            })
+        }        
     }  
+
+
+    let contract_has_admin = false;
+    const query_admin = async () => {
+        let osmosis_query = osmosis.ClientFactory.createRPCQueryClient({rpcEndpoint});
+
+        (await osmosis_query).osmosis.tokenfactory.v1beta1.denomAuthorityMetadata({denom: denom}).then((res) => {
+            console.log(res)
+            
+            if(res.authorityMetadata?.admin == middleware_contract_address) {
+                contract_has_admin = true;
+                success_notification("Success: Contract has admin")
+            } else {
+                contract_has_admin = false;
+                error_notification("Contract does not have admin")
+            }
+        })
+    }
+
 </script>
 
 <style>
@@ -205,5 +250,14 @@
     <!-- text input for middleware_contract -->
     <label for="middleware_contract_address">Middleware Contract Address</label>
     <input type="text" placeholder="Middleware Contract Address" bind:value={middleware_contract_address} />
+
+    <!-- move tokenfactory admin to contract -->    
+    <button on:click={() => {method = "transfer_admin"; migrate_execute()}}>Transfer Admin To Contract</button>
+
+    
+    <button on:click={() => {query_admin()}}>Query admin and ensure success</button>
+
+    <br>
+    <hr>
 
 </div>
