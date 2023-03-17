@@ -13,6 +13,8 @@
 		justify-content: center;
 		align-items: center;
 		margin: 0 auto;
+		box-shadow: 15px 20px 30px #444444;
+		border: 1px solid #000;
 	}
 
 	input[type="text"] {
