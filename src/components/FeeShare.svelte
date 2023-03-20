@@ -59,11 +59,19 @@
 				// if it errors, its not an admin contract.
 				await cw_query.cosmwasm.wasm.v1
 					.contractInfo({ address: contract_addr })
-					.then((res) => {
-						// toast.error(`Admin is a contract. You can not change the withdraw address`, toast_style);
-						// toast.push(`Admin is a contract. You can not change the withdraw address`, error);
-						error_notification('Admin is a contract. You can not change the withdraw address');
-						return false;
+					.then((res) => {										
+						if(contract_addr == new_address) {
+							controlling_contract_account = admin;
+							// toast.push(`Admin is a contract. You can change the withdraw address`, success);
+							success_notification('Admin is a contract and you are registering it to itself :D');
+							return true
+						} else {
+							error_notification('Admin is a contract. You can not change the withdraw address');
+							// unless the withdraw adderss is also the admin
+							return false;
+						}
+
+						
 					})
 					.catch((e) => {
 						controlling_contract_account = admin;
@@ -98,15 +106,15 @@
 		}
 
 		console.log(controlling_contract_account, address);
-		if (controlling_contract_account != address) {
-			// toast.error(`You are not the admin of this contract.`, toast_style);
-			// toast.push(`You are not the admin of this contract.`, error);
-			// let controlling_html = `<a href="https://www.mintscan.io/juno/account/${controlling_contract_account}" target="_blank">mintscan.io/account</a>`;
+		
+		if (controlling_contract_account != address && controlling_contract_account != new_address) {
 			error_notification(
 				`You are not the admin or creator.\nThey are:\n${controlling_contract_account}`
 			);
 			return;
 		}
+
+		// if the contract is a factory contract, we can set deployer to anything & it will correct
 
 		let msg;
 		let signing_client = getSigningJunoClient({ rpcEndpoint, signer });
@@ -114,14 +122,14 @@
 			const { registerFeeShare } = juno.feeshare.v1.MessageComposer.withTypeUrl;
 			msg = registerFeeShare({
 				contractAddress: contract_addr,
-				deployerAddress: controlling_contract_account,
+				deployerAddress: controlling_contract_account, // controlling_contract_account
 				withdrawerAddress: new_address
 			});
 		} else {
 			const { updateFeeShare } = juno.feeshare.v1.MessageComposer.withTypeUrl;
 			msg = updateFeeShare({
 				contractAddress: contract_addr,
-				deployerAddress: controlling_contract_account,
+				deployerAddress: controlling_contract_account, // controlling_contract_account
 				withdrawerAddress: new_address
 			});
 		}
