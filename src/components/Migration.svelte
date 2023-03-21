@@ -353,33 +353,47 @@
         color: #fff;
     }
 
+    .container-div {
+        display: grid;
+        grid-template-columns: 100%;
+        row-gap: 20px;
+        margin-bottom: 50px;
+    }
+
+    @media (min-width:780px){
+        .container-div {
+            display: grid;
+            grid-template-columns: 50% 50%;
+        }
+    }
+
 	.container {
-		background-color: #333;
-		padding: 24px;
-		border-radius: 16px;
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		margin: 0 auto;
+        background-color: #333;
+        padding: 24px;
+        border-radius: 16px;
+        width: 80%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
         box-shadow: 15px 20px 30px #444444;
-		border: 1px solid #000;        
+        border: 1px solid #000;
 	}
 
 	input[type="text"], input[type="number"] {
-		margin: 8px;
+		margin: 2px;
 		padding: 8px;
 		border: none;
 		border-radius: 8px;
 		background-color: #222;
 		color: #fff;
 		font-size: 16px;
-		width: 98%; 
+		width: 98%;
 		/* idk why this input is longer than the select, but width-2 fixes it. Select has the same formating values */
 	}
 	select {
-		margin: 8px;
+		margin: 2px;
 		padding: 8px;
 		border: none;
 		border-radius: 8px;
@@ -418,16 +432,16 @@
 	}
 
     label {        
-        margin-top: 20px;
+        margin-top: 10px;
 
         /* put on the left of the flex */
         align-self: flex-start;
     }
 </style>
 
-
-<div class="container">    
-    <h2 class="flex-box">Middleware Contract (Part 1)</h2>    
+<div class="container-div">
+<div class="container">
+    <h2 class="flex-box">Middleware Contract (Part 1)</h2>
     
     <input type="text" placeholder="ChainID" bind:value={chainId} />
     <input type="text" placeholder="RPC URL" bind:value={rpcEndpoint} />    
@@ -436,7 +450,7 @@
 
     Setup an admin contract to mint tokens
 
-    <label for="mainnet_core">Core ID | <a href="{middleware_url}">tokenfactory-contracts/tokenfactory-core</a></label>
+    <label for="mainnet_code_id">Migrate Code ID | <a href="{migrate_url}">tokenfactory-contracts/tokenfactory-core</a></label>
     <input type="number" placeholder="Middleware Code ID" bind:value={middleware_code_id} />
             
     <label for="denom">Initial Factory Denom</label>        
@@ -465,7 +479,7 @@
     
 </div>
 
-<div class="container" style="margin-left: 10%;">
+<div class="container">
     <h2 class="flex-box">Migrate/Burn Contract (Part 2)</h2>
     <label for="migrate_code_id">Migrate Code ID | <a href="{middleware_url}">tokenfactory-contracts/migrate</a></label>
     <input type="number" placeholder="CW20 / Native burn Migrate Code ID" bind:value={migrate_code_id} />
@@ -520,4 +534,5 @@
     <!-- remove whitelist button future too -->
 
     <hr>    
+</div>
 </div>
