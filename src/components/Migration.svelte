@@ -436,7 +436,7 @@
 
     Setup an admin contract to mint tokens
 
-    <label for="mainnet_code_id">Migrate Code ID | <a href="{migrate_url}">tokenfactory-contracts/tokenfactory-core</a></label>
+    <label for="mainnet_core">Core ID | <a href="{middleware_url}">tokenfactory-contracts/tokenfactory-core</a></label>
     <input type="number" placeholder="Middleware Code ID" bind:value={middleware_code_id} />
             
     <label for="denom">Initial Factory Denom</label>        
