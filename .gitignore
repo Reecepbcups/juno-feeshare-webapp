@@ -1,6 +1,9 @@
 .DS_Store
 node_modules
 /build
+/.idea
+/node_modules
+yarn.lock
 /.svelte-kit
 /package
 .env

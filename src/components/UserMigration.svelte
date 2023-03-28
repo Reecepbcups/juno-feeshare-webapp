@@ -54,8 +54,12 @@
             // only 1 can be set at a time. Option<String>
             if(json.burn_denom) {
                 accepted_denom = json.burn_denom; // native token if applicable
+                is_cw20 = false;
+                method = "native_burn";
             } else {
                 accepted_denom = json.cw20_token_address; // cw20 token address if applicable
+                is_cw20 = true;
+                method = "cw20_burn";
             }
         }).catch((err) => {
             error_notification("Error: " + err)
@@ -92,7 +96,9 @@
     
     let method = "";
     let burn_amount = 0;
-    const user_migrate_execute = async () => {
+    const user_migrate_execute = async (
+        method: boolean
+    ) => {
 		let signer: OfflineSigner = await get_wallet_for_chain(chainId);
 		let address = (await signer.getAccounts())[0].address;
 
@@ -119,9 +125,8 @@
 			case 'cw20_burn':
                 // go through the CW20 contract, then call a burn message to the migrate contract address BLEH
                 let encoded_msg = Buffer.from(JSON.stringify({
-                    receive: {}
+                    convert: {}
                 })).toString('base64')
-
 				msg = executeContract({
                     sender: address,
                     contract: accepted_denom,
@@ -314,7 +319,7 @@
 
 
 
-        <button on:click={() => {method = "native_burn"; user_migrate_execute()}}>Migrate Tokens</button>
+        <button on:click={() => {user_migrate_execute(method)}}>Migrate Tokens</button>
 
     {/if}
 
