@@ -42,10 +42,12 @@
 		"@cosmjs/utils": "^0.30.0",
 		"@cosmos-kit/keplr": "^0.32.14",
 		"@juno-network/assets": "0.17.0",
+		"browserify-fs": "^1.0.0",
 		"chain-registry": "^1.6.0",
 		"cosmjs-types": "^0.6.1",
 		"cosmjs-utils": "^0.1.0",
 		"juno-network": "^0.14.0",
+		"level-filesystem": "^1.2.0",
 		"svelte-easy-toast": "^1.1.0",
 		"svelte-french-toast": "^1.0.3",
 		"svelte-icons": "^2.1.0"

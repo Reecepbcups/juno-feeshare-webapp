@@ -12,6 +12,7 @@
 	import TokenFactory from '../components/TokenFactory.svelte';
 	import Migration from '../components/Migration.svelte';
 	import UserMigration from '../components/UserMigration.svelte';
+	import Airdrop from '../components/Airdrop.svelte';
 
 	const fee = {amount: [{	amount: "100000",	denom: "ujuno",},], gas: "200000",};
 		
@@ -33,6 +34,7 @@
 	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>
 	<button class="nav-button {selectedTab === 'Migration' ? 'selected' : ''}" on:click={() => selectedTab = 'Migration'}>Dev Migration</button>
 	<button class="nav-button {selectedTab === 'UserMigrate' ? 'selected' : ''}" on:click={() => selectedTab = 'UserMigrate'}>User Migrate</button>
+	<button class="nav-button {selectedTab === 'Airdrop' ? 'selected' : ''}" on:click={() => selectedTab = 'Airdrop'}>Airdrop</button>
 
 	<!-- a button which is a link to github -->
 	<button class="nav-button" on:click={() => window.open("https://github.com/reecepbcups/juno-chain-webapp/", "_blank")}>Github</button>
@@ -48,6 +50,8 @@
 	<Migration />
 {:else if selectedTab === 'UserMigrate'}	
 	<UserMigration />
+{:else if selectedTab === 'Airdrop'}	
+	<Airdrop />
 {/if}
 </div>
 </div>
