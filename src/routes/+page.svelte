@@ -13,6 +13,8 @@
 	import Migration from '../components/Migration.svelte';
 	import UserMigration from '../components/UserMigration.svelte';
 
+	import { page } from '$app/stores';		
+
 	const fee = {amount: [{	amount: "100000",	denom: "ujuno",},], gas: "200000",};
 		
 	const rpcEndpoint = "https://rpc.juno.strange.love/"			
@@ -22,35 +24,73 @@
 	
 	// juno1d7yjapmwerm6qxaxtuyefmcns45x9x6d78gys9uhfsdpkfs4dxfssgw7ap
 
-	export let selectedTab = 'FeeShare';	
+	let allowed_pages = new Map([
+		['feeshare', 'FeeShare'],
+		['tokenfactory', 'TokenFactory'],
+		['migration', 'Dev Migration'],
+		['usermigrate', 'User Migrate'],
+	]);
+
+	export let selectedTab = $page.url.searchParams.get('page')?.toLowerCase() || 'feeshare';
+	if (selectedTab === null) { 
+		selectedTab = 'feeshare';
+	} else if(!allowed_pages.has(selectedTab)) {
+		selectedTab = 'NOT_FOUND';
+	}
+
+	const setPageUrl = (page: string) => {
+		const url = new URL(window.location.href);
+		page = page.toLowerCase();
+
+		if(!allowed_pages.has(page)) {
+			selectedTab = 'NOT_FOUND';
+		}
+
+		url.searchParams.set('page', page);
+		window.history.pushState({}, '', url);
+	};
+
+
 </script>
 
-<!-- <Toaster /> -->
 <SvelteEasyToast />
-<div>
-<div class="nav-bar">
-	<button class="nav-button {selectedTab === 'FeeShare' ? 'selected' : ''}" on:click={() => selectedTab = 'FeeShare'}>FeeShare</button>
-	<button class="nav-button {selectedTab === 'TokenFactory' ? 'selected' : ''}" on:click={() => selectedTab = 'TokenFactory'}>TokenFactory</button>
-	<button class="nav-button {selectedTab === 'Migration' ? 'selected' : ''}" on:click={() => selectedTab = 'Migration'}>Dev Migration</button>
-	<button class="nav-button {selectedTab === 'UserMigrate' ? 'selected' : ''}" on:click={() => selectedTab = 'UserMigrate'}>User Migrate</button>
 
-	<!-- a button which is a link to github -->
-	<button class="nav-button" on:click={() => window.open("https://github.com/reecepbcups/juno-chain-webapp/", "_blank")}>Github</button>
-</div>
-<div class="page">
-<!-- <a href="https://github.com/Reecepbcups/juno-chain-webapp">https://github.com/Reecepbcups/juno-chain-webapp</a> -->
-<div class="page-container">
-{#if selectedTab === 'FeeShare'}
-	<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
-{:else if selectedTab === 'TokenFactory'}
-	<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
-{:else if selectedTab === 'Migration'}	
-	<Migration />
-{:else if selectedTab === 'UserMigrate'}	
-	<UserMigration />
-{/if}
-</div>
-</div>
+<div>
+	<div class="nav-bar">
+		{#each [...allowed_pages] as [page, name]}
+			<button class="nav-button {selectedTab === name ? 'selected' : ''}" on:click={() => {
+				selectedTab = page
+
+				setPageUrl(page);
+			}}>{name}</button>
+		{/each}
+		
+		<button class="nav-button" on:click={() => window.open("https://github.com/reecepbcups/juno-chain-webapp/", "_blank")}>Github</button>
+	</div>
+
+
+	<div class="page">
+
+		<div class="page-container">
+			{#if selectedTab === 'feeshare'}
+				<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
+			{:else if selectedTab === 'tokenfactory'}
+				<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
+			{:else if selectedTab === 'migration'}	
+				<Migration />
+			{:else if selectedTab === 'usermigrate'}	
+				<UserMigration />			
+			{:else if selectedTab === 'NOT_FOUND'}
+				<br>
+				<center>
+					<div class="page-container">
+						<h1>Page Not Found</h1>
+						<p>Sorry, the page you are looking for does not exist.</p>
+					</div>
+				</center>
+			{/if}
+		</div>
+	</div>
 </div>
 
 
