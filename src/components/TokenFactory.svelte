@@ -39,7 +39,8 @@
 		}
 	}
 
-	input[type="text"] {
+	input[type="text"],
+	input[type="number"] {
 		margin: 8px;
 		padding: 8px;
 		border: none;
@@ -361,50 +362,62 @@
 	  	<input type="text" placeholder="Enter sub denom name (ex: rac)" bind:value={sub_denom}>
 
 	  {:else if method == 'burn'}
-	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
-			<select bind:value={full_denom}>
-	  		{#each my_denoms as denom}
-	  			<option value={denom} selected>{denom}</option>
-	  		{/each}
-			</select>
-	  	<input type="text" placeholder="Enter amount to burn" bind:value={amount}>
+	  	<button on:click={query_my_denoms} type="button">Query My Created Denoms</button>
+
+		<ul>
+			{#each my_denoms as denom}
+				<li>{denom}</li>
+			{/each}
+		</ul>
+
+	  	<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+	  	<input type="number" placeholder="Enter amount to burn" bind:value={amount}>
 
 	  {:else if method == 'mint'}
-	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
-			<select bind:value={full_denom}>
-	  		{#each my_denoms as denom}
-	  			<option value={denom}>{denom}</option>
-	  		{/each}
-			</select>
+	  		<button on:click={query_my_denoms} type="button">Query My Denoms</button>
+			<ul>
+				{#each my_denoms as denom}
+					<li>{denom}</li>
+				{/each}
+			</ul>
+
+			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
 			<input type="text" placeholder="Enter amount to mint" bind:value={amount}>
 
 	  {:else if method == 'change admin'}
-	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
-			<select bind:value={full_denom}>
-	  		{#each my_denoms as denom}
-	  			<option value={denom}>{denom}</option>
-	  		{/each}
-			</select>
+	  		<button on:click={query_my_denoms} type="button">Query My Created Denoms</button>
+			  <ul>
+				{#each my_denoms as denom}
+					<li>{denom}</li>
+				{/each}
+			</ul>
+			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+
 			<input type="text" placeholder="Enter new admin address" bind:value={new_admin}>
 
 	  {:else if method == 'metadata'}
-	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
-			<select bind:value={full_denom}>
-	  		{#each my_denoms as denom}
-	  			<option value={denom}>{denom}</option>
-	  		{/each}
-			</select>
-			<input type="text" placeholder="Enter ticker" bind:value={ticker}>
-			<input type="text" placeholder="Enter display" bind:value={display}>
-			<input type="text" placeholder="Enter exponent" bind:value={exponent}>
+	  		<button on:click={query_my_denoms} type="button">Query My Created Denoms</button>
+			<ul>
+				{#each my_denoms as denom}
+					<li>{denom}</li>
+				{/each}
+			</ul>
+			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+
+			<input type="text" placeholder="Enter ticker symbol (TICKER)" bind:value={ticker}>
+			<input type="text" placeholder="Enter display (Joe Token)" bind:value={display}>
+			<input type="text" placeholder="Enter exponent (6 typically)" bind:value={exponent}>
 
 	  {:else if method == 'send'}
-	  	<button on:click={query_my_denoms} type="button">Query My Denoms</button>
-			<select bind:value={full_denom}>
-	  		{#each my_denoms as denom}
-	  			<option value={denom}>{denom}</option>
-	  		{/each}
-			</select>
+			<button on:click={query_my_denoms} type="button">Query My Created Denoms</button>
+			<ul>
+				{#each my_denoms as denom}
+					<li>{denom}</li>
+				{/each}
+			</ul>
+
+			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+
 			<input type="text" placeholder="Enter amount to send" bind:value={amount}>
 			<input type="text" placeholder="Enter recipient address" bind:value={recipient}>
 	  {/if}
