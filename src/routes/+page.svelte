@@ -58,7 +58,7 @@
 <div>
 	<div class="nav-bar">
 		{#each [...allowed_pages] as [page, name]}
-			<button class="nav-button {selectedTab === name ? 'selected' : ''}" on:click={() => {
+			<button class="nav-button {selectedTab === page ? 'selected' : ''}" on:click={() => {
 				selectedTab = page
 
 				setPageUrl(page);
@@ -124,7 +124,8 @@
 		cursor: pointer;
 		font-size: 0.7rem;
 		width: 80%;
-		margin: auto;
+		/* margin: auto; */
+		margin-top: 10px;
 	}
 
 	@media (min-width:780px){

@@ -1,15 +1,17 @@
 <script lang="ts">
     import { Buffer } from 'buffer';
-    import {fromNumber} from 'long';
+    // import {fromNumber} from 'long';
 
-    let fee = { amount: [{ amount: '1000', denom: 'ujuno' }], gas: '400000' };
+    import { page } from '$app/stores';	
+    export let chainId = $page.url.searchParams.get('chain_id')?.toLowerCase() || 'juno-1';
+    export let rpcEndpoint = $page.url.searchParams.get('rpc')?.toLowerCase() || 'https://juno-rpc.reece.sh:443';
 
-    let rpcEndpoint = "https://juno-rpc.reece.sh:443"
-    let chainId = "juno-1"
+    // the address they want to interact with, deposit & burn in exchange for the new token
+    export let migrate_contract_address = $page.url.searchParams.get('contract')?.toLowerCase() || 'juno1d5pkl438ugaufhafx9pzy3dw4rlfdt7sfldja7ydvzkxnj5etgpqxjjryz';    
 
+    let fee = { amount: [{ amount: '1000', denom: 'ujuno' }], gas: '400000' };     
 
-
-    import {juno, cosmwasm, osmosis, router, getSigningJunoClient, getSigningOsmosisClient, getSigningCosmwasmClient, getSigningCosmwasmClientOptions} from 'juno-network'	
+    import {cosmwasm, getSigningCosmwasmClient} from 'juno-network'	
 	import { get_wallet_for_chain } from '../wallet';
     import type { OfflineSigner } from '@cosmjs/proto-signing';
 	import { error_notification, success_notification } from './Status.svelte';	
@@ -29,9 +31,7 @@
     //         middleware_denom = json.denoms[0]
     //     })
     // }
-
-    // the address they want to interact with, deposit & burn in exchange for the new token
-    let migrate_contract_address = "juno1d5pkl438ugaufhafx9pzy3dw4rlfdt7sfldja7ydvzkxnj5etgpqxjjryz" // still need to add mint perms to this
+    
     let accepted_denom = "" // if it starts with juno1, its a cw20. Else, native
     let is_cw20 = accepted_denom.startsWith("juno1")
 
@@ -97,7 +97,7 @@
     let method = "";
     let burn_amount = 0;
     const user_migrate_execute = async (
-        method: boolean
+        method: string
     ) => {
 		let signer: OfflineSigner = await get_wallet_for_chain(chainId);
 		let address = (await signer.getAccounts())[0].address;
@@ -174,6 +174,23 @@
         })
 
     }
+
+    //  TODO: allow for them to copy paste the URL easily to give to others
+    const getUrlFormat = (): string => {
+        let host = window.location.host;
+
+        // get base website url root
+        let updated_url = `${host}/?page=usermigrate&chain_id=${chainId}&rpc=${rpcEndpoint}&contract=${migrate_contract_address}`;
+
+
+        // http://localhost:6010/?page=usermigrate&chain_id=juno-1&rpc=https://rpc.juno.strange.love&contract=juno1d5pkl438ugaufhafx9pzy3dw4rlfdt7sfldja7ydvzkxnj5etgpqxjjryz
+        
+
+        console.log(updated_url)
+
+        return updated_url;
+    }    
+
 </script>
 
 <style>
@@ -292,6 +309,8 @@
 
     <label for="migrate_contract">Migrate Contract</label>
     <input type="text" placeholder="juno1..." bind:value={migrate_contract_address} />
+    
+    <!-- <p>{getUrlFormat()}</p> -->
 
     <!-- button to query this address -->
     <button on:click={get_migrate_config}>Query Migrate Contract</button>
