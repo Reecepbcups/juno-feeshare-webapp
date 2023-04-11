@@ -567,9 +567,10 @@
 
 		<!-- the TOCHain needs to be a chain which supports PFM (Juno, Hub) -->
 		<div id="packet-forward-middleware" style="display: none;">
-			<p>Use packet forward middleware</p>
+			<!-- <p>Use packet forward middleware</p> -->
 
 			<!-- forwarded chain -->
+			<h4>Final Forwarded Chain</h4>
 			<input type="text" placeholder="Final chain destination" list="chain_names" bind:value={forward_chain_chain_id} />
 
 			<!-- get their wallet address or allow for text box input -->
