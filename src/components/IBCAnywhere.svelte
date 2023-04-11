@@ -403,9 +403,16 @@
 				throw new Error('No channel found');
 			}
 
+			// TODO: Need to use FungibleTokenPacketData, not memo
+
 			// "{ \"forward\": { \"receiver\": \"juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0\", \"port\": \"transfer\", \"channel\": \"channel-207\" }}"
 			// memo = `{ "forward": { "receiver": "${forwarded_chain_address}", "port": "transfer", "channel": "${channel_id}" }}`
+			
 			memo = "{ \"forward\": { \"receiver\": \"" + forwarded_chain_address + "\", \"port\": \"transfer\", \"channel\": \"" + channel_id + "\" }}"
+
+			// memo = '{ "forward": { "receiver" : "juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0" , "port": "transfer" ,"channel": "channel-207"}}'
+
+			// { \"forward\": { \"receiver\": \"juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0\", \"port\": \"transfer\", \"channel\": \"channel-207\" }}
 		} 
 
 		from_client
