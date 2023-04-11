@@ -12,6 +12,7 @@
 	import TokenFactory from '../components/TokenFactory.svelte';
 	import Migration from '../components/Migration.svelte';
 	import UserMigration from '../components/UserMigration.svelte';
+	import IBCAnywhere from '../components/IBCAnywhere.svelte';
 
 	import { page } from '$app/stores';		
 
@@ -25,15 +26,16 @@
 	// juno1d7yjapmwerm6qxaxtuyefmcns45x9x6d78gys9uhfsdpkfs4dxfssgw7ap
 
 	let allowed_pages = new Map([
-		['feeshare', 'FeeShare'],
 		['tokenfactory', 'TokenFactory'],
+		['feeshare', 'FeeShare'],
 		['migration', 'Dev Migration'],
 		['usermigrate', 'User Migrate'],
+		['ibc', 'IBC Transfer'],
 	]);
 
 	export let selectedTab = $page.url.searchParams.get('page')?.toLowerCase() || 'feeshare';
 	if (selectedTab === null) { 
-		selectedTab = 'feeshare';
+		selectedTab = 'tokenfactory';
 	} else if(!allowed_pages.has(selectedTab)) {
 		selectedTab = 'NOT_FOUND';
 	}
@@ -72,14 +74,16 @@
 	<div class="page">
 
 		<div class="page-container">
-			{#if selectedTab === 'feeshare'}
-				<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
-			{:else if selectedTab === 'tokenfactory'}
+			{#if selectedTab === 'tokenfactory'}
 				<TokenFactory rpcEndpoint={rpcEndpoint} fee={fee} />
+			{:else if selectedTab === 'feeshare'}
+				<FeeShare rpcEndpoint={rpcEndpoint} fee={fee} />
 			{:else if selectedTab === 'migration'}	
 				<Migration />
 			{:else if selectedTab === 'usermigrate'}	
 				<UserMigration />			
+			{:else if selectedTab === 'ibc'}	
+				<IBCAnywhere />			
 			{:else if selectedTab === 'NOT_FOUND'}
 				<br>
 				<center>
