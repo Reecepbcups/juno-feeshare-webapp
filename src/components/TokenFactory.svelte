@@ -161,7 +161,13 @@
 		let address = (await signer.getAccounts())[0].address;
 
 		let msg;
-		let signing_client = getSigningOsmosisClient({ rpcEndpoint, signer });		
+		let signing_client = getSigningOsmosisClient({ rpcEndpoint, signer });	
+		
+		// if full_denom does not start with fac factory/ , error out
+		if(full_denom.length > 0 && !full_denom.startsWith('factory/')) {
+			error_notification('Full denom must be factory/<YourAddress/Name');			
+			return;
+		}
 
 		switch (method) {
 			case 'create':
@@ -370,7 +376,7 @@
 			{/each}
 		</ul>
 
-	  	<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+	  	<input type="text" placeholder="Enter Denom (factory/juno1.../name)" bind:value={full_denom}>
 	  	<input type="number" placeholder="Enter amount to burn" bind:value={amount}>
 
 	  {:else if method == 'mint'}
@@ -381,7 +387,7 @@
 				{/each}
 			</ul>
 
-			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+			<input type="text" placeholder="Enter Denom (factory/juno1.../name)" bind:value={full_denom}>
 			<input type="text" placeholder="Enter amount to mint" bind:value={amount}>
 
 	  {:else if method == 'change admin'}
@@ -391,7 +397,7 @@
 					<li>{denom}</li>
 				{/each}
 			</ul>
-			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+			<input type="text" placeholder="Enter Denom (factory/juno1.../name)" bind:value={full_denom}>
 
 			<input type="text" placeholder="Enter new admin address" bind:value={new_admin}>
 
@@ -402,7 +408,7 @@
 					<li>{denom}</li>
 				{/each}
 			</ul>
-			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+			<input type="text" placeholder="Enter Denom (factory/juno1.../name)" bind:value={full_denom}>
 
 			<input type="text" placeholder="Enter ticker symbol (TICKER)" bind:value={ticker}>
 			<input type="text" placeholder="Enter display (Joe Token)" bind:value={display}>
@@ -416,7 +422,7 @@
 				{/each}
 			</ul>
 
-			<input type="text" placeholder="Enter Denom" bind:value={full_denom}>
+			<input type="text" placeholder="Enter Denom (factory/juno1.../name)" bind:value={full_denom}>
 
 			<input type="text" placeholder="Enter amount to send" bind:value={amount}>
 			<input type="text" placeholder="Enter recipient address" bind:value={recipient}>
