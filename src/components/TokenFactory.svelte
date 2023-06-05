@@ -169,6 +169,7 @@
 			return;
 		}
 
+		fee.gas = '200000';
 		switch (method) {
 			case 'create':
 				const { createDenom } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
@@ -176,6 +177,7 @@
 					sender: address,
 					subdenom: sub_denom
 				});
+				fee.gas = '2300000'
 
 				if (sub_denom.length == 0) {
 					error_notification('Subdenom cannot be empty');
@@ -355,7 +357,7 @@
 
 	  <!-- Selector for actions to do -->
 	  <select bind:value={method}>		
-		<option value="create" selected>Create (Cost 1 JUNO)</option>
+		<option value="create" selected>Create</option>
 		<option value="mint">Mint</option>
 		<option value="burn">Burn</option>
 		<option value="change admin">Change Admin</option>
