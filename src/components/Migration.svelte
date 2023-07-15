@@ -2,7 +2,6 @@
     import { Buffer } from 'buffer';        
 
     import {chains, type IChain} from '../scripts/chains';
-
    let selectedChain: IChain | undefined = chains.get("juno-1");
     
     let migrate_code_id = 0;
@@ -32,9 +31,7 @@
     let middleware_contract_address = "juno12gvt30u3qsvj4lpdesy5afuz67l5tyyzfu09fe5956rxvgtvykjqdntykz";    
     let migrate_contract_address = ""; // juno129hwc89t2dauw4czpqv9jrfurlpmu8rufnzpejwkl78sx0xy9apqnjsl2e
 
-    const migrate_execute = async () => {
-
-        // if selectedChain is undefined, return
+    const migrate_execute = async () => {        
         if(!selectedChain) {
             error_notification("Chain not selected")
             return;
