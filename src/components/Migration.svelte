@@ -1,20 +1,24 @@
 <script lang="ts">
-    import { Buffer } from 'buffer';
+    import { Buffer } from 'buffer';        
 
-    export let fee = { amount: [{ amount: '1000', denom: 'ujuno' }], gas: '200000' };
+    import {chains, type IChain} from '../scripts/chains';
 
-    let rpcEndpoint = "https://juno-rpc.reece.sh:443"
-    let chainId = "juno-1"
+   let selectedChain: IChain | undefined = chains.get("juno-1");
+    
+    let migrate_code_id = 0;
+    let middleware_code_id = 0;
+    $: if(selectedChain) {
+        migrate_code_id = selectedChain.migrate_code_id;
+        middleware_code_id = selectedChain.middleware_code_id;
+    }
+
 
     let denom = "factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/js-denom";
     
     import {fromNumber} from 'long';
     
-    let middleware_code_id = 2323;  
     let middleware_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/tokenfactory_core"
-
-    let migrate_code_id = 2324;
-    let migrate_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/migrate"
+    let migrate_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/migrate"    
 
     import {juno, cosmwasm, osmosis, router, getSigningJunoClient, getSigningOsmosisClient, getSigningCosmwasmClient} from 'juno-network'	
 	import { get_wallet_for_chain } from '../wallet';
@@ -29,13 +33,22 @@
     let migrate_contract_address = ""; // juno129hwc89t2dauw4czpqv9jrfurlpmu8rufnzpejwkl78sx0xy9apqnjsl2e
 
     const migrate_execute = async () => {
-		let signer: OfflineSigner = await get_wallet_for_chain(chainId);
+
+        // if selectedChain is undefined, return
+        if(!selectedChain) {
+            error_notification("Chain not selected")
+            return;
+        }
+
+		let signer: OfflineSigner = await get_wallet_for_chain(selectedChain.chainId);
 		let address = (await signer.getAccounts())[0].address;
 
 		let msg;
 
         const { changeAdmin } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
         const {instantiateContract, executeContract} = cosmwasm.wasm.v1.MessageComposer.withTypeUrl;
+
+        let fee = { amount: [{ amount: '1000', denom: selectedChain.feeDenom }], gas: '200000' };
 				        			        
 		switch (method) {
 			case 'middleware':
@@ -48,7 +61,7 @@
                 msg = instantiateContract({
                     admin: address,
                     sender: address,
-                    codeId: fromNumber(middleware_code_id),
+                    codeId: fromNumber(selectedChain.middleware_code_id),
                     funds: [],
                     label: middleware_label || `${denom} tf-middleware`,
                     msg: Buffer.from(JSON.stringify(init_msg)),                    
@@ -154,7 +167,7 @@
                 msg = instantiateContract({
                     admin: address,
                     sender: address,
-                    codeId: fromNumber(migrate_code_id),
+                    codeId: fromNumber(selectedChain.migrate_code_id),
                     funds: [],
                     label: middleware_label || `${denom} tf-middleware`,
                     msg: Buffer.from(JSON.stringify(migrate_init_msg)),                    
@@ -172,6 +185,8 @@
             return;
         }
         
+        let rpcEndpoint = selectedChain.rpcEndpoint;
+
         if(method == "middleware") {
             let cosmwasm_client = getSigningCosmwasmClient({ rpcEndpoint, signer });
             (await cosmwasm_client).signAndBroadcast(address, [msg], fee, "").then((res) => {
@@ -265,6 +280,12 @@
 
     let middleware_allowed_minters: string[] = [];
     const get_middleware_config = async () => {
+        if (!selectedChain) {
+            error_notification("Chain not selected")
+            return;
+        }
+
+        let rpcEndpoint = selectedChain.rpcEndpoint;
         let cosmwasm_query = cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint});
 
         let query_req = Buffer.from(JSON.stringify({get_config:{}}));
@@ -286,6 +307,12 @@
 
     let contract_has_admin = false;
     const query_admin = async () => {
+        if (!selectedChain) {
+            error_notification("Chain not selected")
+            return;
+        }
+
+        let rpcEndpoint = selectedChain.rpcEndpoint;        
         let osmosis_query = osmosis.ClientFactory.createRPCQueryClient({rpcEndpoint});
 
         (await osmosis_query).osmosis.tokenfactory.v1beta1.denomAuthorityMetadata({denom: denom}).then((res) => {
@@ -323,6 +350,12 @@
     let cw20_burn_address = ""; // RAW: juno15u3dt79t6sxxa3x3kpkhzsy56edaa5a66wvt3kxmukqjz2sx0hes5sn38g
     let native_burn_denom = "";
     const query_cw20_ensure = async () => {
+        if (!selectedChain) {
+            error_notification("Chain not selected")
+            return;
+        }
+        
+        let rpcEndpoint = selectedChain.rpcEndpoint;
         let cosmwasm_query = cosmwasm.ClientFactory.createRPCQueryClient({rpcEndpoint});
 
         // in the base CW20
@@ -403,17 +436,6 @@
 		width: 100%;
 	}
 
-	input[type="submit"] {
-		margin: 16px;
-		padding: 8px 16px;
-		border: none;
-		border-radius: 8px;
-		background-color: #f5f5f5;
-		color: #222;
-		font-size: 16px;
-		cursor: pointer;
-	}
-
 	button {
 		margin: 8px;
 		padding: 8px 16px;
@@ -423,12 +445,6 @@
 		color: #000;
 		font-size: 16px;
 		cursor: pointer;
-	}
-
-	h1 {
-		font-size: 48px;
-		margin-bottom: 32px;
-		text-align: center;
 	}
 
     label {        
@@ -442,16 +458,40 @@
 <div class="container-div">
 <div class="container">
     <h2 class="flex-box">Middleware Contract (Part 1)</h2>
+
+    <!-- show a drop down selector for chains -->
+    <label for="chain">Chain</label>
+    <select bind:value={selectedChain}>
+        {#each Array.from(chains.values()) as chain}
+            <option value={chain}>{chain.chainId}</option>
+        {/each}
+    </select>
+
+    <!-- when chain is selected, update the following inputs -->
+    {#if selectedChain}
+        {#each Object.keys(selectedChain) as key}
+            {#if key != "migrate_code_id"}   
+
+                {#if key == "middleware_code_id"}
+                    <label for="mainnet_code_id">Core Code ID | <a href="{middleware_url}">tokenfactory-contracts/tokenfactory-core</a></label>
+                    <input type="number" placeholder="Middleware Code ID" bind:value={selectedChain[key]} />
+                {:else}
+                    <label for={key}>{key}</label>
+                    <input type="text" placeholder={key} bind:value={selectedChain[key]} />
+                {/if}
+
+            {/if}
+        {/each}
+    {/if}    
     
-    <input type="text" placeholder="ChainID" bind:value={chainId} />
-    <input type="text" placeholder="RPC URL" bind:value={rpcEndpoint} />    
+    <!-- <input type="text" placeholder="ChainID" bind:value={chainId} />
+    <input type="text" placeholder="RPC URL" bind:value={rpcEndpoint} />     -->
 
     <hr>
 
     Setup an admin contract to mint tokens
 
-    <label for="mainnet_code_id">Core Code ID | <a href="{middleware_url}">tokenfactory-contracts/tokenfactory-core</a></label>
-    <input type="number" placeholder="Middleware Code ID" bind:value={middleware_code_id} />
+
             
     <label for="denom">Initial Factory Denom</label>        
     <input type="text" placeholder="factory/.../..." bind:value={denom} />        
@@ -481,8 +521,13 @@
 
 <div class="container">
     <h2 class="flex-box">Migrate/Burn Contract (Part 2)</h2>
-    <label for="migrate_code_id">Migrate Code ID | <a href="{middleware_url}">tokenfactory-contracts/migrate</a></label>
-    <input type="number" placeholder="CW20 / Native burn Migrate Code ID" bind:value={migrate_code_id} />
+
+    <!-- an update of selected chain, update migrate code id -->
+    {#if selectedChain} 
+        <label for="migrate_code_id">Migrate Code ID | <a href="{middleware_url}">tokenfactory-contracts/migrate</a></label>
+        <input type="number" placeholder="CW20 / Native burn Migrate Code ID" bind:value={selectedChain.migrate_code_id} />
+    {/if}
+
 
     <!-- I don't think we need this here, maybe a text box here -->
     <!-- <button on:click={query_denoms_from_middleware_contract}>Get Denoms</button>    
