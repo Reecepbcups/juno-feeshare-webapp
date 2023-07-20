@@ -45,7 +45,7 @@
 		"chain-registry": "^1.6.0",
 		"cosmjs-types": "^0.6.1",
 		"cosmjs-utils": "^0.1.0",
-		"juno-network": "^0.14.0",
+		"juno-network": "file:/home/reece/Desktop/Programming/TS/juno-ts/packages/juno-network",
 		"svelte-easy-toast": "^1.1.0",
 		"svelte-french-toast": "^1.0.3",
 		"svelte-icons": "^2.1.0"
