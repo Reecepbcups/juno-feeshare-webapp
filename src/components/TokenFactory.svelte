@@ -172,7 +172,7 @@
 			return;
 		}
 		let signer: OfflineSigner = await get_wallet_for_chain(selectedChain.chainId);
-		let address = (await signer.getAccounts())[0].address;
+		let address = (await signer.getAccounts())[0].address;		
 
 		let msg;
 		let rpcEndpoint = selectedChain.rpcEndpoint;
@@ -204,9 +204,9 @@
 			// todo, add a mint and burn in 1. make a Tx builder class?
 			case 'mint':
 				const { mint } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
-				msg = mint({
+				msg = mint({					
+					mintToAddress: address,
 					sender: address,
-					// Coin
 					amount: { denom: full_denom, amount: amount.toString() }
 				});
 
@@ -219,8 +219,8 @@
 			case 'burn':
 				const { burn } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
 				msg = burn({
+					burnFromAddress: address,
 					sender: address,
-					// Coin
 					amount: { denom: full_denom, amount: amount.toString() }
 				});
 
