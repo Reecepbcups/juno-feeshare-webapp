@@ -197,10 +197,6 @@
 	* {
         font-size: 1.0em;                    
 	}
-    
-    a {
-        color: #fff;
-    }
 
     @media (min-width:650px){
         .container {
@@ -249,27 +245,6 @@
 		width: 98%; 
 		/* idk why this input is longer than the select, but width-2 fixes it. Select has the same formating values */
 	}
-	select {
-		margin: 8px;
-		padding: 8px;
-		border: none;
-		border-radius: 8px;
-		background-color: #222;
-		color: #fff;
-		font-size: 16px;
-		width: 100%;
-	}
-
-	input[type="submit"] {
-		margin: 16px;
-		padding: 8px 16px;
-		border: none;
-		border-radius: 8px;
-		background-color: #f5f5f5;
-		color: #222;
-		font-size: 16px;
-		cursor: pointer;
-	}
 
 	button {
 		margin: 8px;
@@ -280,12 +255,6 @@
 		color: #000;
 		font-size: 16px;
 		cursor: pointer;
-	}
-
-	h1 {
-		font-size: 48px;
-		margin-bottom: 32px;
-		text-align: center;
 	}
 
     label {        

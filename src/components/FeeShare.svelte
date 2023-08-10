@@ -288,17 +288,6 @@
 		cursor: pointer;
 	}
 
-	button {
-		margin: 8px;
-		padding: 8px 16px;
-		border: none;
-		border-radius: 8px;
-		background-color: #f6f6f6;
-		color: #000;
-		font-size: 16px;
-		cursor: pointer;
-	}
-
 	h1 {
 		font-size: 48px;
 		margin-bottom: 32px;

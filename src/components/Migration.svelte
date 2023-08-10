@@ -1,6 +1,12 @@
 <script lang="ts">
     import { Buffer } from 'buffer';        
 
+    import { fromNumber } from 'long';
+    
+    // import Long type from juno-ts/packages/juno-network/types/codegen/helpers
+    // import { Long } from '../../node_modules/juno-network/types/codegen/helpers';
+    // import '../../node_modules/juno-network/types/codegen/helpers';
+
     import {chains, type IChain} from '../scripts/chains';
    let selectedChain: IChain | undefined = chains.get("juno-1");
     
@@ -12,9 +18,7 @@
     }
 
 
-    let denom = "factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/js-denom";
-    
-    import {fromNumber} from 'long';
+    let denom = "factory/juno10r39fueph9fq7a6lgswu4zdsg8t3gxlq670lt0/js-denom";    
     
     let middleware_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/tokenfactory_core"
     let migrate_url = "https://github.com/CosmosContracts/tokenfactory-contracts/tree/main/contracts/migrate"    
@@ -57,8 +61,8 @@
                 }            
                 msg = instantiateContract({
                     admin: address,
-                    sender: address,
-                    codeId: fromNumber(selectedChain.middleware_code_id),
+                    sender: address,                    
+                    codeId: fromNumber(middleware_code_id),
                     funds: [],
                     label: middleware_label || `${denom} tf-middleware`,
                     msg: Buffer.from(JSON.stringify(init_msg)),                    
@@ -164,6 +168,7 @@
                 msg = instantiateContract({
                     admin: address,
                     sender: address,
+                    // codeId: fromNumber(selectedChain.migrate_code_id),
                     codeId: fromNumber(selectedChain.migrate_code_id),
                     funds: [],
                     label: middleware_label || `${denom} tf-middleware`,
