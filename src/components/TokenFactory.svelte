@@ -98,13 +98,16 @@
 	import type { OfflineSigner } from '@cosmjs/proto-signing';
 	import { error_notification, success_notification } from '../components/Status.svelte';
 
-	// get rpcEndpoint from the main page route
-	export let rpcEndpoint = '';
-	export let fee = { amount: [{ amount: '1000', denom: 'ujuno' }], gas: '200000' };
-	let chain_id = 'juno-1';
+	import {chains, JunoChain, type IChain} from '../scripts/chains';
+   let selectedChain: IChain | undefined = chains.get("juno-1");	
 
-	let method = 'create';
-	const juno_addr_len = 43; // normal user addr
+  
+
+	let method = 'create';	
+	if (!selectedChain) {
+	   selectedChain = JunoChain
+   }
+	let fee = { amount: [{ amount: '1000', denom: selectedChain.feeDenom }], gas: '200000' };
 
 	let sub_denom = '';
 	let full_denom = '';
@@ -130,14 +133,21 @@
 	let user_address = '';
 	let my_denoms: string[] = [];
 	const query_my_denoms = async (): Promise<string[]> => {
+
+		if (!selectedChain) {
+			error_notification('Chain is not selected');
+			return [];
+		}
+
 		if (user_address.length == 0) {
 			// show button to connect wallet
-			get_wallet_for_chain(chain_id).then(async (signer) => {
+			get_wallet_for_chain(selectedChain.chainId).then(async (signer) => {
 				user_address = (await signer.getAccounts())[0].address;
 				query_my_denoms();
 			});
 		}
 
+		let rpcEndpoint = selectedChain.rpcEndpoint;
 		let osmosis_query = await osmosis.ClientFactory.createRPCQueryClient({ rpcEndpoint });
 
 		let denoms = await osmosis_query.osmosis.tokenfactory.v1beta1.denomsFromCreator({
@@ -157,10 +167,15 @@
 	let exponent = 6;
 	let uri_link = '';
 	const tf_execute = async () => {
-		let signer: OfflineSigner = await get_wallet_for_chain(chain_id);
+		if (!selectedChain) {
+			error_notification('Chain is not selected');
+			return;
+		}
+		let signer: OfflineSigner = await get_wallet_for_chain(selectedChain.chainId);
 		let address = (await signer.getAccounts())[0].address;
 
 		let msg;
+		let rpcEndpoint = selectedChain.rpcEndpoint;
 		let signing_client = getSigningOsmosisClient({ rpcEndpoint, signer });	
 		
 		// if full_denom does not start with fac factory/ , error out
@@ -168,16 +183,17 @@
 			error_notification('Full denom must be factory/<YourAddress/Name');			
 			return;
 		}
-
-		fee.gas = '200000';
+				
+		fee.gas = '220000';
 		switch (method) {
 			case 'create':
+				fee.gas = '2300000';
 				const { createDenom } = osmosis.tokenfactory.v1beta1.MessageComposer.withTypeUrl;
 				msg = createDenom({
 					sender: address,
 					subdenom: sub_denom
 				});
-				fee.gas = '2300000'
+				// fee.gas = '2300000'
 
 				if (sub_denom.length == 0) {
 					error_notification('Subdenom cannot be empty');
@@ -220,12 +236,7 @@
 					sender: address,
 					denom: full_denom,
 					newAdmin: new_admin
-				});
-								
-				if (new_admin.length <= juno_addr_len) {
-					error_notification('New admin address is not valid');					
-					return;
-				}
+				});				
 
 				if (full_denom.length == 0) {
 					error_notification('Denom cannot be empty');
@@ -240,11 +251,6 @@
 					toAddress: recipient,
 					amount: [{ denom: full_denom, amount: amount.toString() }]
 				});
-
-				if (recipient.length < juno_addr_len) {
-					error_notification(`to address ${recipient}\nis not valid`);
-					return;
-				}
 
 				if (full_denom.length == 0) {
 					error_notification('Denom cannot be empty');
@@ -307,14 +313,14 @@
 		}
 
 		// make a popup which shows the message
-		let popup = window.open('', 'popup', 'width=600,height=600');
-		if(popup) {
-			popup.document.write(`<pre>${JSON.stringify(msg, null, 2)}</pre>`);
-			popup.document.write(`<button onclick="window.close()">Close</button>`);						
-		}
+		// let popup = window.open('', 'popup', 'width=600,height=600');
+		// if(popup) {
+		// 	popup.document.write(`<pre>${JSON.stringify(msg, null, 2)}</pre>`);
+		// 	popup.document.write(`<button onclick="window.close()">Close</button>`);						
+		// }
 
 		(await signing_client)
-			.signAndBroadcast(address, [msg], fee, 'memo')
+			.signAndBroadcast(address, [msg], fee, '')
 			.then((res) => {
 				console.log(res);
 
@@ -354,6 +360,18 @@
 	<h1>Juno TokenFactory</h1>
 
 	<form on:submit={tf_execute}>
+		
+		<select bind:value={selectedChain}>
+			{#each Array.from(chains.values()) as chain}
+				<option value={chain}>Chain {chain.chainId}</option>
+			{/each}
+		</select>
+
+		{#if selectedChain?.chainId == 'custom'}				
+			<input type="text" placeholder="Enter chain id" bind:value={selectedChain.chainId}>
+			<input type="text" placeholder="Enter rpc endpoint" bind:value={selectedChain.rpcEndpoint}>
+			<input type="text" placeholder="Enter fee denom" bind:value={selectedChain.feeDenom}>
+		{/if}
 
 	  <!-- Selector for actions to do -->
 	  <select bind:value={method}>		
@@ -429,7 +447,10 @@
 			<input type="text" placeholder="Enter amount to send" bind:value={amount}>
 			<input type="text" placeholder="Enter recipient address" bind:value={recipient}>
 	  {/if}
-	  
+	  			  	
+	  <!-- <input type="number" placeholder="Enter gas amount" bind:value={fee.gas}> -->
+	  <!-- <input type="number" placeholder="Enter gas amount" bind:value={fee.gas}> -->
+
 	  <!-- <input type="text" placeholder="Input 1" bind:value={input1Value}>
 	  <input type="text" placeholder="Input 2" bind:value={input2Value}> -->
 	  <input type="submit" value="{method}">
